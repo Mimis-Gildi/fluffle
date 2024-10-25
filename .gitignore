@@ -1,0 +1,105 @@
+### Jekyll template
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+# Bundler
+.bundle/
+vendor/
+
+
+### JetBrains template
+# File-based project format
+*.iws
+*.iml
+*.ipr
+# IntelliJ
+out/
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+# Subproject global technologies
+kotlinc.xml
+
+
+### Linux template
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+### Diff template
+*.patch
+*.diff
+
+
+### Vim template
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+# Session
+Session.vim
+Sessionx.vim
+# Temporary
+.netrwhist
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
+
+### macOS template
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+# Icon must end with two \r
+Icon
+# Thumbnails
+._*
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### Trash OS bloat
+# Files never welcome in repos
+*.bat
+*.cmd
+*.exe
+*.ini
+*.ins
+*.inx
+*.com
+*.lnk
+*.msi
+*.vbscript
+*.vb
+*.vbs
+*.vbe
+*.ps1
+*.psm1
+*.ws
+*.wsf
+*.wsh
+*.cpl
+*.scr
+*.gadget
