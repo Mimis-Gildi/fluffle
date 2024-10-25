@@ -28,6 +28,10 @@ artifacts
 compiler.xml
 jarRepositories.xml
 modules.xml
+# Scala
+**/sbt.xml
+**/scala_compiler.xml
+**/scala_settings.xml
 # Editor-based Rest Client
 !/httpRequests
 # Local project styles
