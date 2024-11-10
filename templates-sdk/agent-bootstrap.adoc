@@ -1,0 +1,411 @@
+= GitHub Actions: Stateful Agent Bootstrap
+R!dd13r rdd13r <12781006+rdd13r@users.noreply.github.com>
+v1.0.0, Sunday 10th November 2024
+:description: Instructions and assets to bootstrap a stateful GitHub Actions agent for AI ML projects.
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:tip-caption: 💡️
+:note-caption: ℹ️
+:important-caption: ❗
+:caution-caption: 🔥
+:warning-caption: ⚠️
+:source-highlighter: rouge
+:toc: preamble
+:toclevels: 3
+:toc-title: Stateful Agent
+:keywords: AI ML GitHub Actions Agent Bootstrap
+:imagesdir: ./src/docs/resources/images
+ifdef::env-name[:relfilesuffix: .adoc]
+
+These are the shorthand instructions on how Mímis Gildi builds and deploys a stateful GitHub Actions agent for AI ML projects.
+
+Reference: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners[About Self-Hosted Runners].
+
+== Base OS: Debian Stable
+
+[NOTE]
+.Linux administration is out of scope for this runbook:
+====
+The starting point is expected to be a well-configured Debian Stable (currently `bookworm`) OS as is established by the https://github.com/mimis-gildi[Mímis Gildi] governance organization.
+
+[IMPORTANT]
+.Minimum expectations for the host:
+======
+
+Example of Apt configuration:
+
+[source,shell]
+./etc/sources.list
+----
+deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
+
+deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+
+# bookworm-updates, to get updates before a point release is made;
+# see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
+deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
+----
+
+
+For posterity, here is one example of the host OS baseline setup.
+
+[source,shell]
+.Host OS Baseline:
+----
+apt update && apt dist-upgrade -y \
+&& apt install -y build-essential linux-source module-assistant \
+apt-transport-https software-properties-common ca-certificates \
+zsh zsh-autosuggestions zsh-doc zsh-syntax-highlighting zsh-theme-powerlevel9k \
+psmisc curl wget gnupg2 unzip zip \
+vim vim-addon-manager vim-scripts vim-syntastic \
+git git-extras git-lfs git-doc git-extras git-man \
+lm-sensors sysbench smartmontools \
+&& apt autoremove -y \
+&& apt autoclean -y \
+&& rm -rf /var/lib/apt/lists/*
+# Above - may say no if package list is still needed.
+
+m-a prepare && m-a update
+# Above - check with m-a
+
+----
+
+======
+====
+
+=== User Account Templating
+
+. Acquire `zskel` as zskel.tgz from Mímis Gildi;
+.. `zsh` is the default shell;
+.. `oh-my-zsh` is the default plugin manager;
+.. `sdkman` is the default JVM SDK package manager;
+... `jdk-temurin`, `kotlin`, `gradle` - all _latest_ (LTS) versions;
+.. `mini-forge` (mini-conda) is the default Python package manager;
+... default environment `ml` matching coterminous `colab`;
+.. `volta` is the default Node.js package manager;
+... `node` at latest LTS;
+.. `asdf` is the default Ruby package manager;
+... `ruby` at latest LTS;
+.. `GitHub CLI` Agent deployed to `~/.actions` directory;
+... `~/var/runner/` directory is the working directory for the GitHub Actions agent;
+... `~/var/runner/` directory is symlinked to `/var/runner/{code-name}` directory;
+
+[source,shell]
+----
+cd /etc
+tar -xvvf zskel.tgz
+----
+
+=== `adduser` configuration
+
+[source,shell]
+./etc/adduser.conf
+----
+# /etc/adduser.conf: `adduser' configuration.
+# See adduser(8) and adduser.conf(5) for full documentation.
+
+# A commented out setting indicates that this is the default in the
+# code. If you need to change those settings, remove the comment and
+# make your intended change.
+
+# The login shell to be used for all new users.
+# Default: DSHELL=/bin/bash
+DSHELL=/usr/bin/zsh
+
+# The directory in which new home directories should  be  created.
+# Default: DHOME=/home
+# DHOME=/home
+
+# The directory from which skeletal user configuration files
+# will be copied.
+# Default: SKEL=/etc/skel
+SKEL=/etc/zskel
+
+# ...
+----
+
+=== Create GitHub Actions Agents _Shared Group_
+
+[source,shell]
+.Create a group for all agent users:
+----
+addgroup github
+----
+
+This will allow sharing /var content among the agents if required.
+
+=== Create GitHub Actions Agent User
+
+[source,shell]
+.Agent user fo \{github-organization-slug\}:
+----
+#adduser --verbose --disabled-password github-your-organization-slug
+----
+
+[NOTE]
+.Fields answered have lookup meanings.
+====
+
+Consider this example:
+
+[source,shell]
+.A Mímis Gildi agent user example:
+----
+#adduser --verbose --disabled-password github-mimis-gildi
+# Adding user `github-mimis-gildi' ...
+# Adding new group `github-mimis-gildi' (1003) ...
+# Adding new user `github-mimis-gildi' (1003) with group `github-mimis-gildi (1003)' ...
+# Creating home directory `/home/github-mimis-gildi' ...
+# Copying files from `/etc/zskel' ...
+# Changing the user information for github-mimis-gildi
+# Enter the new value, or press ENTER for the default
+#	Full Name []: Yoshi Mimis Gildi Runner
+#	Room Number []: 102
+#	Work Phone []: 2
+#	Home Phone []: 2
+#	Other []: 2
+# Is the information correct? [Y/n]
+# Adding new user `github-mimis-gildi' to supplemental / extra groups `users' ...
+# Adding user `github-mimis-gildi' to group `users' ...
+----
+See Mímis Gildi documentation for naming conventions as well as index numbers meanings and their use.
+====
+
+[source,shell]
+.Add user to sharing groups:
+----
+usermod -aG github,www-data github-your-organization-slug
+----
+
+=== Test GitHub Actions Agent User
+
+[source,shell]
+.Test GitHub Actions Agent User:
+----
+su - github-your-organization-slug
+sdk selfupdate
+----
+
+== Bind New Agent
+
+Navigate to your organization's settings page and add the new agent, choosing Linux.
+
+ Settings => Actions => Runners => Add runner => "New runner"
+
+[NOTE]
+.Example of a new runner activation command:
+====
+`./config.sh --url https://github.com/Yer-Organization-Slug --token ADBQLTSHLILKAWGIG5FWERLHGBZ2U`
+====
+
+[source,shell]
+.Log into the new agent user, bind, and invoke the agent:
+----
+su - github-your-organization-slug
+cd .actions
+./config.sh --url https://github.com/Yer-Organization-Slug --token YerOrganizationNewToken
+./run.sh
+----
+
+[NOTE]
+.Example of a new runner activation success:
+====
+
+Possible agent console output:
+
+[source,shell]
+----
+➜  .actions ./run.sh
+
+√ Connected to GitHub
+
+Current runner version: '2.320.0'
+2024-11-10 07:55:04Z: Listening for Jobs
+----
+
+Break with Ctl-C key combination
+
+[IMPORTANT]
+.Agen configuration conventions example"
+======
+
+- Name: HostName for OrganizationName
+- +Label: hostname
+- Working directory: `$HOME/var/runner`
+
+ where `runner` is a symlink to fast managed storage.
+
+.Live example from Toad:
+[%nowrap,shell]
+....
+--------------------------------------------------------------------------------
+|        ____ _ _   _   _       _          _        _   _                      |
+|       / ___(_) |_| | | |_   _| |__      / \   ___| |_(_) ___  _ __  ___      |
+|      | |  _| | __| |_| | | | | '_ \    / _ \ / __| __| |/ _ \| '_ \/ __|     |
+|      | |_| | | |_|  _  | |_| | |_) |  / ___ \ (__| |_| | (_) | | | \__ \     |
+|       \____|_|\__|_| |_|\__,_|_.__/  /_/   \_\___|\__|_|\___/|_| |_|___/     |
+|                                                                              |
+|                       Self-hosted runner registration                        |
+|                                                                              |
+--------------------------------------------------------------------------------
+
+# Authentication
+
+
+√ Connected to GitHub
+
+# Runner Registration
+
+Enter the name of the runner group to add this runner to: [press Enter for Hera-Virt]
+
+Enter the name of runner: [press Enter for toad] Toad for Gervi Héra Vitr
+
+This runner will have the following labels: 'self-hosted', 'Linux', 'X64'
+Enter any additional labels (ex. label-1,label-2): [press Enter to skip] toad
+
+√ Runner successfully added
+√ Runner connection is good
+
+# Runner settings
+
+Enter name of work folder: [press Enter for _work] /home/github-gervi-hera-virt/var/runner
+
+√ Settings Saved.
+
+➜  /home/github-gervi-hera-virt/var/runner -> /srv/var/actions/github-gervi-hera-virt
+
+....
+
+======
+
+====
+
+== Install Docker for Actions to use
+
+[source,shell]
+.Docker installation:
+----
+sudo su -
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+cat  /etc/apt/sources.list.d/docker.list
+
+apt update && apt -y dist-upgrade
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+----
+
+Example of the resulting Apt repository list for Docker:
+
+[source,shell]
+./etc/apt/sources.list.d/docker.list
+----
+deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable
+----
+
+[source,shell]
+.Add agents to the `docker` group:
+----
+sudo su -
+groupadd docker
+usermod -aG docker github-your-organization-slug
+----
+
+[TIP]
+.Checking your user:
+====
+`lslogins github-your-organization-slug`
+====
+
+[NOTE]
+.Example of the resulting `lslogins` output for established agent:
+====
+Redacted output:
+
+[source,shell]
+.on Mimis Gildi agent:
+----
+➜  lslogins github-mimis-gildi
+Username:                           github-mimis-gildi
+UID:                                1003
+Gecos field:                        Yoshi Mimis Gildi Runner,102,2,2,2
+Home directory:                     /home/github-mimis-gildi
+Shell:                              /usr/bin/zsh
+No login:                           no
+Password is locked:                 yes
+Password not required (empty):      yes
+Login by password disabled:         no
+Primary group:                      github-mimis-gildi
+GID:                                1003
+Supplementary groups:               docker,www-data,users,github
+Supplementary group IDs:            996,33,100,1001
+Last terminal:
+Last hostname:
+Hushed:                             no
+Password expiration warn interval:  7
+Password changed:                   Nov09/19:00
+Maximum change time:                99999
+Running processes:                  0
+
+Last logs:
+----
+====
+
+
+[source,shell]
+.Test Docker:
+----
+su - github-your-organization-slug
+docker run --rm hello-world; docker ps
+----
+
+
+[WARNING]
+.Consider adequate testing!
+====
+It is customary to log into the Agent user account and invoke the `run.sh` script to test the agent through some *_real workflow executions_*.
+====
+
+== Make Agent _Permanent_
+
+If everything is A-OK, let's add a sysctl service for our agent.
+
+=== Create Service Configuration
+
+[source,shell]
+./etc/systemd/system/github-yer-organization-slug.service
+----
+[Unit]
+Description=YerHost YerOrg GitHub Actions Runner
+After=network.target
+
+[Service]
+User=github-yer-organization-slug
+WorkingDirectory=/home/yer-organization-slug/.actions
+ExecStart=/home/yer-organization-slug/.actions/run.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+----
+
+Then:
+
+. `systemctl daemon-reload`
+. `systemctl enable github-yer-organization-slug`
+. `systemctl start github-yer-organization-slug`
+. `systemctl status github-yer-organization-slug`
+. `journalctl -u github-yer-organization-slug -f`
+
+== Summary
+
+This is a summary runbook for a templated GitHub Actions agent setup within the Mímis Gildi organizations ecosystem.
+
+More to follow.
+
+-rdd13r
