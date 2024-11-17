@@ -19,6 +19,12 @@ v1.0.0, Sunday 10th November 2024
 :imagesdir: ./src/docs/resources/images
 ifdef::env-name[:relfilesuffix: .adoc]
 :linux-install-gh: https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+:miniforge-home: https://github.com/conda-forge/miniforge
+:conda-manage-envs: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+:conda-user-guide: https://docs.conda.io/projects/conda/en/latest/user-guide/index.html
+:blog-state-of-ruby: https://dev.to/yet_anotherdev/state-of-ruby-what-version-manager-to-use-4gbg
+:ruby-bible: https://www.ruby-lang.org/en/documentation/installation/
+:ruby-quick: https://www.ruby-lang.org/en/documentation/quickstart/
 
 These are the shorthand instructions on how Mímis Gildi builds and deploys a stateful GitHub Actions agent for AI ML projects.
 
@@ -419,7 +425,7 @@ Though it is possible to install `gh` from the Distribution APT repository, we d
 ====
 
 [source,shell]
-.*_Latest_* GitHub CLI installation:
+.*_Latest_* => {linux-install-gh}[GitHub CLI installation] <=
 ----
 (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
 	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
@@ -475,6 +481,137 @@ Save this script to `/home/lugaru/bin/ruby-up.sh`, make it executable, and run i
 ----
 include::src/main/sh/ruby-up.sh[]
 ----
+
+There are *_many_* tools designed to manage Ruby versions. +
+From trivial to comprehensive.
+For example, Mímis Gildi +
+use `asdf` with a Ruby plugin for the local box.
+And then +
+`rbenv`, `chruby`, `rvm`, `rbenv-bundler`, `rbenv-gemset` +
+etc. - a ton of tools.
+But most, if not all, call _this_ program: +
+https://github.com/rbenv/ruby-build[*_ruby-build_*], packaged as a gem. See {ruby-bible}[the Ruby bible here].
+
+Hence, we use `ruby-build` directly in the ruby-up script.
+
+Albeit [.small]#not# *_too_* [.small]#_shiny_# new, Ruby is a {ruby-quick}[_good language to learn_].
+
+
+=== Add dedicated `conda` for ML: {miniforge-home}[conda-forge/miniforge]
+
+[NOTE]
+.This also sets up the default `ml` environment for GitHub AI Actions.
+====
+Any conda environment is fine for the projects except `base`, +
+which is 1) set up as the default; and, 2) reserved for `conda`; +
+thus *_should not be polluted_*! +
+{nbsp} +
+
+Luckily, old Mímis Gildi hackers publish a few standard environments +
+that are suitable for GitHub Actions AI projects.
+The general one is `ml`. +
+And that is the one we will provision automatically.
+====
+
+
+[source,shell]
+.Add `conda` for ML:
+----
+include::src/main/sh/conda-up.sh[]
+----
+
+By the agent convention this script is located in the ~/bin directory and named `conda-up`. +
+Listing this directory, one will find another script there already:
+
+.Example of bin before the `conda-up` script creation:
+....
+➜  bin l
+total 12K
+drwxr-xr-x  2 github-gervi-hera-vitr github-gervi-hera-vitr 4.0K Nov  9 23:38 .
+drwx------ 16 github-gervi-hera-vitr github-gervi-hera-vitr 4.0K Nov 17 04:15 ..
+-rwx------  1 github-gervi-hera-vitr github-gervi-hera-vitr  851 Nov  9 23:38 init-actions
+➜  bin
+....
+
+.Example of bin after the `conda-up` script creation:
+....
+➜  bin l
+total 16K
+drwxr-xr-x  2 github-gervi-hera-vitr github-gervi-hera-vitr 4.0K Nov 17 04:16 .
+drwx------ 16 github-gervi-hera-vitr github-gervi-hera-vitr 4.0K Nov 17 04:16 ..
+-rwxr-xr-x  1 github-gervi-hera-vitr github-gervi-hera-vitr  544 Nov 17 04:16 conda-up
+-rwx------  1 github-gervi-hera-vitr github-gervi-hera-vitr  851 Nov  9 23:38 init-actions
+➜  bin
+....
+
+Run the `conda-up` script::
+
+Execution will complete with the `~/.zshrc` modified - examine the modifications.
+
+Logout and back in again to see the changes::
+
+This action will cause conda block within `~/.zshrc` to activate your environment:
+
+.Base environment is activated, your prompt will look like this:
+....
+(base) ➜  ~
+....
+
+[WARNING]
+.Missed `conda` shell activation?
+====
+
+[source,shell]
+.then bootstrap for `zsh` manually:
+----
+conda init zsh
+----
+====
+
+[TIP]
+.Direct `conda` environment activation examples:
+====
+
+[source,shell]
+.use `mamba`:
+----
+micromamba activate /home/github-gervi-hera-vitr/miniforge3
+# or
+micromamba activate /home/github-gervi-hera-vitr/miniforge3/envs/ml
+----
+====
+
+[TIP]
+.To run a single job:
+====
+[source,shell]
+----
+micromamba run -p /home/github-gervi-hera-vitr/miniforge3/envs/ml oddJob
+----
+====
+
+=== Setting up `ml`, and {conda-manage-envs}[_managing environments_]:
+
+[source,shell]
+.Crate and activate `ml` environment:
+----
+conda create -n ml python numpy scipy pandas ipython matplotlib jupyter scikit-learn sympy nose
+conda info --envs
+# Activate `ml` environment:
+conda activate ml
+----
+
+_**If happy with the `ml` environment: make it the default**_: +
+add the following to `~/.zshrc`: `conda activate ml`.
+
+[CAUTION]
+.The convention is -- per workflow!
+====
+Although having a reference environment is good, it is not recommended to pollute it with your own workflow dependencies.
+The best practice is to have an ML build workflow manage its own environment during a pipeline execution.
+====
+
+See [.big]#{conda-user-guide}[Conda User Guide]# for more information.
 
 == Summary
 
