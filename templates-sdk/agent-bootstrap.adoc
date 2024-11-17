@@ -18,6 +18,7 @@ v1.0.0, Sunday 10th November 2024
 :keywords: AI ML GitHub Actions Agent Bootstrap
 :imagesdir: ./src/docs/resources/images
 ifdef::env-name[:relfilesuffix: .adoc]
+:linux-install-gh: https://github.com/cli/cli/blob/trunk/docs/install_linux.md
 
 These are the shorthand instructions on how Mímis Gildi builds and deploys a stateful GitHub Actions agent for AI ML projects.
 
@@ -402,10 +403,83 @@ Then:
 . `systemctl status github-yer-organization-slug`
 . `journalctl -u github-yer-organization-slug -f`
 
+== Enhance Agent Abilities
+
+There are additional tools, although usually strictly necessary,
+yet quiet frequently used in Mímis Gildi workflows.
+
+This section goes over some of them: the ones that are most likely to be used by the Gervi Hera Virt team.
+
+=== GitHub CLI: Workflow Management Jobs
+
+[IMPORTANT]
+.GitHub CLI from Debian is *_outdated_*!
+====
+Though it is possible to install `gh` from the Distribution APT repository, we do NOT recommend it.
+====
+
+[source,shell]
+.*_Latest_* GitHub CLI installation:
+----
+(type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
+	&& wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+	&& sudo apt update \
+	&& sudo apt install gh -y
+----
+
+[WARNING]
+.Do NOT authenticate CLI via `gh auth login`!
+====
+While it is okay to `login` as the `actions` user to test the CLI +
+(and there is a dedicated token for this purpose `@lugaru`) +
+please, DO NOT authenticate via `gh auth login` +
+as the `actions` user! +
+If you already have, then log out: `gh auth logout`. +
+_Having an agent logged in is a security hole!_ +
+{nbsp} +
+Workflow will provide its own token fine-tuned to workflow needs; +
+_so let that be._
+====
+
+[source,shell]
+.Configure for each agent user:
+----
+gh config set git_protocol ssh
+----
+
+=== Add local SDKs
+
+[source,shell]
+.Add `gradle`, `kotlin`, and `java` SDKs:
+----
+sdk install gradle
+sdk install kotlin
+sdk install java
+----
+
+[source,shell]
+.Check SDK:
+----
+sdk current
+----
+
+=== Add Ruby SDKs for Jekyll
+
+Save this script to `/home/lugaru/bin/ruby-up.sh`, make it executable, and run it:
+
+[source,shell]
+.Add `ruby` SDKs:
+----
+include::src/main/sh/ruby-up.sh[]
+----
+
 == Summary
 
 This is a summary runbook for a templated GitHub Actions agent setup within the Mímis Gildi organizations ecosystem.
 
 More to follow.
 
--rdd13r
+-Rdd13r
