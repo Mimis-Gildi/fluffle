@@ -1,6 +1,6 @@
-= GitHub Actions: Stateful Agent Bootstrap
+= GitHub Actions: Agent Bootstrap and Local Box
 R!dd13r rdd13r <12781006+rdd13r@users.noreply.github.com>
-v1.0.0, Sunday 10th November 2024
+v1.1.0, Saturday 25th November 2025
 :description: Instructions and assets to bootstrap a stateful GitHub Actions agent for AI ML projects.
 :sectnums:
 :sectanchors:
@@ -26,22 +26,71 @@ ifdef::env-name[:relfilesuffix: .adoc]
 :ruby-bible: https://www.ruby-lang.org/en/documentation/installation/
 :ruby-quick: https://www.ruby-lang.org/en/documentation/quickstart/
 
-These are the shorthand instructions on how Mímis Gildi builds and deploys a stateful GitHub Actions agent for AI ML projects.
+These are short instructions on how Mímis Gildi builds and deploys GitHub Actions agent for schools including AI ML projects.
+There are two parts to this runbook: *Self-Hosted Runners* and *Local Box*.
+
+Self-Hosted Runners::
+This is production.
+The GitHub Actions Agent is installed on self-hosted runners.
+The runners thus have access to the private Mimis Gildi infrastructure.
+This includes access to ASE Inc. MATILDA AI Platform (_Tillie_).
+To begin with, the runners can be stateful.
+Eventually, the combination of stateful and stateless runners will be supported.
+Importantly, *_the runners define the current production dependency versions_*.
+____
+The Production::
+* Debian 12 `bookworm`;
+** Any Debian 12 descendant;
+** i.e., `Ubunty`, `Mint`
+* Pyhon >= 3.12.8;
+* Tensorflow >= 2.17.0; **
+____
+
+Local Box::
+This is development.
+Currently, Munchkins have the following workstation types in use:
+- Linux (Debian 11 and 12) *_workstations_* with GPU CUDA capability;
+* *Debian 12:* _as in **production**_;
+* *Mint 22.1:* _as in **production**_;
+* *Debian 11:* Python==3.11.11, Tensorflow==2.12.0, CUDA 9.0.176;
+- MacBook Pro (Intel) *mobile _workstations_* with CPU Tensorflow plugin;
+* Python==3.11.11, Tensorflow==2.13.1, `tensorflow-metal`==1.0.0;
+- MacBook Pro (Mx) *mobile _workstations_* with GPU Tensorflow plugin;
+* _As in **production**_;
+
+The Tensorflow dependencies thus are geared towards the lowes denominator of Mac Intell support.
+Tests are expected to run comparably on all workstation types and production environments used.
+
+== Self-Hosted Runners
 
 Reference: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners[About Self-Hosted Runners].
 
-== Base OS: Debian Stable
+=== Base OS: Debian Stable
 
 [NOTE]
 .Linux administration is out of scope for this runbook:
 ====
 The starting point is expected to be a well-configured Debian Stable (currently `bookworm`) OS as is established by the https://github.com/mimis-gildi[Mímis Gildi] governance organization.
+====
+
+==== Agent Hardware
 
 [IMPORTANT]
-.Minimum expectations for the host:
-======
+.Minimum expectations for the *_agent_* host:
+====
+- AMD64 CPU;
+- Multicore (increments of 4), 4-8-12-etc.;
+- 4-8-16-32GB RAM;
+- instance slicing on the above specifications.
+====
 
-Example of Apt configuration:
+==== `sysbench` benchmarking
+
+See link:./src/main/sh/bench.sh[bench.sh] for details.
+
+==== Package Manager: `apt` configuration:
+
+Initial `apt` configuration:
 
 [source,shell]
 ./etc/sources.list
@@ -58,6 +107,7 @@ deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-fre
 deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
 ----
 
+==== Core Packages:
 
 For posterity, here is one example of the host OS baseline setup.
 
@@ -66,16 +116,16 @@ For posterity, here is one example of the host OS baseline setup.
 ----
 apt update && apt dist-upgrade -y \
 && apt install -y build-essential linux-source module-assistant \
-apt-transport-https software-properties-common ca-certificates \
+apt-transport-https apt-file debian-goodies software-properties-common ca-certificates \
 zsh zsh-autosuggestions zsh-doc zsh-syntax-highlighting zsh-theme-powerlevel9k \
-psmisc curl wget gnupg2 unzip zip \
+jq psmisc curl wget gnupg2 unzip zip speedtest-cli mutt hardinfo htop nmap tree \
 vim vim-addon-manager vim-scripts vim-syntastic \
 git git-extras git-lfs git-doc git-extras git-man \
 lm-sensors sysbench smartmontools \
 && apt autoremove -y \
 && apt autoclean -y \
 && rm -rf /var/lib/apt/lists/*
-# Above - may say no if package list is still needed.
+# Above - may say no if package list is still needed (not common).
 
 m-a prepare && m-a update
 # Above - check with m-a
@@ -198,7 +248,7 @@ su - github-your-organization-slug
 sdk selfupdate
 ----
 
-== Bind New Agent
+=== Bind New Agent
 
 Navigate to your organization's settings page and add the new agent, choosing Linux.
 
