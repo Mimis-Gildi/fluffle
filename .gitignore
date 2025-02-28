@@ -103,3 +103,8 @@ Temporary Items
 *.cpl
 *.scr
 *.gadget
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
