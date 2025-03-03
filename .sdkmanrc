@@ -4,6 +4,6 @@ java=21.0.6-tem
 kotlin=2.1.10
 scala=3.6.3
 maven=3.9.9
-gradle=8.12.1
+gradle=8.13
 sbt=1.10.7
 kobweb=0.9.18
