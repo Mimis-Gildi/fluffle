@@ -132,9 +132,6 @@ m-a prepare && m-a update
 
 ----
 
-======
-====
-
 === User Account Templating
 
 . Acquire `zskel` as zskel.tgz from Mímis Gildi;
@@ -257,7 +254,9 @@ Navigate to your organization's settings page and add the new agent, choosing Li
 [NOTE]
 .Example of a new runner activation command:
 ====
+
 `./config.sh --url https://github.com/Yer-Organization-Slug --token ADBQLTSHLILKAWGIG5FWERLHGBZ2U`
+
 ====
 
 [source,shell]
@@ -642,10 +641,55 @@ micromamba run -p /home/github-gervi-hera-vitr/miniforge3/envs/ml oddJob
 
 === Setting up `ml`, and {conda-manage-envs}[_managing environments_]:
 
+[IMPORTANT]
+.Strict Python ecosystem *version locking is a SAD Necessity*!
+====
+. Build fidelity depends on tested correlation of library versions;
+. `tensorflow` -- primary dependency introducing the `ml` environment;
+. `python` -- secondary dependency limited by both `tensorflow` and the *runtime*;
+. `CUDA` -- final dependency limited by hardware support on `prod`, `trunk` and `dev`;
+. `python=3.12.8` -- the current highest version supported by Linux and OSX #Tillie kernel extensions#!
+
+_By deviating from these production tested versions, we risk having inoperable local._ +
+Also, please remember that: +
+1) `python=3.12.x` is a 'fuzzy' matching, while; +
+2) `python==3.12.x` is a 'strict' matching; +
+3) `mamba` keeps a pinned file in the environment configuration directory; +
+4) Only the 'major' version of `python` should be component locked, i.e., `python=3.12`.
+====
+
 [source,shell]
-.Crate and activate `ml` environment:
+.Baseline BASE environment:
 ----
-conda create -n ml python numpy scipy pandas ipython matplotlib jupyter scikit-learn sympy nose
+conda install python==3.12.8
+conda update -n base -c conda-forge conda
+conda update --all
+----
+
+[CAUTION]
+.The last `conda update --all` command should have bumped `mamba`.
+====
+_Your forge may have been shipped with generation 1 mamba like so:_
+
+ mamba                     1.5.12          py312h9460a1c_0    conda-forge
+
+_And should have been upgraded to generation 2 like so._
+
+ mamba                     2.0.5                h8871ed4_1    conda-forge
+
+If that hasn't occurred for whatever reason, fix by running:
+
+.Mamba command `upgrade` only exists in the first generation of mamba.
+----
+[source,shell]
+mamba upgrade mamba
+----
+====
+
+[source,shell]
+.Crate and activate an empty `ml` component environment:
+----
+conda create -n ml python==3.12 numpy scipy pandas ipython matplotlib jupyter scikit-learn sympy nose
 conda info --envs
 # Activate `ml` environment:
 conda activate ml
