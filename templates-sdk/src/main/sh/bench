@@ -18,7 +18,7 @@ typeset -rx bench_agent_host_key="${bench_agent_host_name%%.*}"  # Key as in jer
 # The aggregated values are stored in a file named $(hostname)-summary.log in the bench dir.        #
 # The values are used for sizing purposes.                                                          #
 ### ... Usage ......................................................................................#
-# ./bench.sh [--file-io] [--cpu] [--memory] [--all] [--help]          # All optional                #
+# ./bench [--file-io] [--cpu] [--memory] [--all] [--help]          # All optional                #
 # --file-io     Run File IO tests.                                                                  #
 # --cpu         Run CPU tests.                                                                      #
 # --memory      Run Memory tests.                                                                   #
@@ -29,6 +29,7 @@ typeset -rx bench_agent_host_key="${bench_agent_host_name%%.*}"  # Key as in jer
 #===================================================================================================#
 
 ### === Formatting Consistency ===
+# FixMe: Include
 typeset -rx divider='|'
 typeset -rx format_s_data_param="%s=%s\n"
 typeset -rx format_i_data_param="%s=%'i\n"
@@ -43,6 +44,8 @@ typeset -rix page_width=180 margin_length=2 divider_length=3 title_margin_length
 typeset -rx bar_h1="$(printf -- '=%.0s' {1..${page_width}})"
 typeset -rx bar_h2="$(printf -- '~%.0s' {1..${page_width}})"
 typeset -rx bar_h3="$(printf -- '.%.0s' {1..${page_width}})"
+# FixMe: End Include
+
 ## === Report Data Keys and Titles ===
 typeset -rxa io_run_mode_dry_run=( "dry" "X" "Dry-Run" "Dry-Run Mode" )                             # Dry-Run Sysbench execution mode meant for probing
 typeset -rxa io_run_mode_in_prod=( "prd" "P" "Linux"   "Agent Production Mode" )                    # Production Sysbench execution mode on Linux

@@ -1,5 +1,3 @@
-# https://docs.github.com/en/code-security/dependabot
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 
 updates:
@@ -8,22 +6,42 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "daily"
+    commit-message:
+      prefix: "⬆️ actions"
+    labels:
+      - dependencies
+      - actions
 
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
+    commit-message:
+      prefix: "⬆️ gradle"
+    labels:
+      - dependencies
+      - gradle
+
+  - package-ecosystem: "gradle"
+    directory: "/build-logic"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "⬆️ gradle (build-logic)"
+    labels:
+      - dependencies
+      - build-logic
 
   - package-ecosystem: "bundler"
     directories:
-      - "/sites/toad"
+      #      - "/sites/toad"
       - "/sites/tom"
-      - "/sites/yoshi"
-      - "/sites/jerry"
+    #      - "/sites/yoshi"
+    #      - "/sites/jerry"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    commit-message:
+      prefix: "⬆️ bundler"
+    labels:
+      - dependencies
+      - jekyll

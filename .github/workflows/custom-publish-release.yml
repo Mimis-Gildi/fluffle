@@ -1,0 +1,118 @@
+name: Publish Current Release
+run-name: "Published Artifacts Release on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+
+on:
+  pull_request:
+    types:
+      - closed
+      - reopened
+      - synchronize
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        required: false
+        type: boolean
+        default: false
+        description: 'Mark this release as a pre-release'
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: zsh -l {0}
+
+jobs:
+  resume-publish:
+    name: "Publish Release Artifacts"
+    runs-on: [self-hosted, release]
+    timeout-minutes: 27
+
+    steps:
+
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v5.0.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+
+      - name: 🛡️ Guard Branch
+        uses: ./.github/actions/feature-fail-fast
+        id: branch-guard
+
+
+      - name: 🛡️ Detect runner environment
+        id: env
+        uses: ./.github/actions/detect-runner-type
+
+
+      - name: 🔍 Extract canonical component version and semantic tag
+        id: version-info
+        uses: ./.github/actions/extract-component-version-and-tag
+
+
+      - name: 📜 Ensure finalized release notes
+        id: notes-verify
+        uses: ./.github/actions/verify-release-notes-file-present
+        with:
+          tag: ${{ steps.version-info.outputs.tag }}
+
+
+      - name: ☕ Set up Java
+        if: steps.env.outputs.is-self-hosted == 'false'
+        uses: actions/setup-java@v5.0.0
+        timeout-minutes: 5
+        with:
+          distribution: temurin
+          java-version: 21
+
+
+      - name: ⚙️ Set up Gradle
+        if: steps.env.outputs.is-self-hosted == 'false'
+        uses: gradle/actions/setup-gradle@v5.0.0
+        timeout-minutes: 5
+
+      - name: Bootstrap SDKMAN if Self-Hosted
+        if: steps.env.outputs.is-self-hosted == 'true'
+        run: |
+          source "$SDKMAN_DIR/bin/sdkman-init.sh" || true
+          source $HOME/miniforge3/bin/activate ml || true
+          sdk version
+          java --version
+          python --version
+          echo "JAVA_HOME=$(sdk home java 21.0.8-tem)" >> $GITHUB_ENV
+          echo "PATH=$(sdk home java 21.0.8-tem)/bin:$PATH" >> $GITHUB_ENV
+
+      - name: 📡 Submit Dependency Graph
+        if: steps.resume-changes-detected.outputs.satisfied == 'true'
+        uses: gradle/actions/dependency-submission@v5.0.0
+        timeout-minutes: 3
+
+
+      - name: 🏗️ Build Doc Artifacts
+        run: ./gradlew asciidoctorPdf
+        timeout-minutes: 9
+
+
+      - name: 🏷️ Create annotated tag if not already present
+        id: tag-create
+        uses: ./.github/actions/create-annotated-git-tag-if-not-exists
+        timeout-minutes: 3
+        with:
+          tag: ${{ steps.version-info.outputs.tag }}
+          message: >
+            Release ${{ steps.version-info.outputs.tag }}
+      
+
+      - name: 🚀 Publish GitHub Release with Artifacts
+        uses: ncipollo/release-action@v1.20.0
+        timeout-minutes: 11
+        with:
+          tag: ${{ steps.version-info.outputs.tag }}
+          name: "Release Bundle ${{ steps.version-info.outputs.tag }}"
+          bodyFile: releases/${{ steps.version-info.outputs.tag }}.md
+          prerelease: ${{ github.event.inputs.prerelease }}
+          artifacts: build/docs/asciidocPdf/*.pdf
+          allowUpdates: true
