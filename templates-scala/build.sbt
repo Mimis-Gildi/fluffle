@@ -4,7 +4,7 @@ ThisBuild / organization := "me.lugaru.virt"
 ThisBuild / name := "templates-scala"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.6.3"
+ThisBuild / scalaVersion := "3.6.4"
 
 lazy val root = (project in file("."))
   .settings(
