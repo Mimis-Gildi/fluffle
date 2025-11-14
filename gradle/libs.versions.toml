@@ -5,4 +5,5 @@
 kotlin-gradle-plugin = "2.2.21"
 
 [libraries]
+#noinspection UnusedVersionCatalogEntry
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }

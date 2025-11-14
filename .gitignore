@@ -108,3 +108,4 @@ Temporary Items
 
 # Ignore Gradle build output directory
 build
+.kotlin
