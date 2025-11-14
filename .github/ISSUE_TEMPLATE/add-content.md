@@ -10,7 +10,4 @@ Content to add:
 
 - Domain:
 - Disposition:
-- Prospect:
-- Customer:
-
-Optional: if important, include origin.
+- Origin:
