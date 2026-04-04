@@ -1,6 +1,5 @@
-name: GitHub Prune Actions Cache
-run-name: "Pruned Old Action Run Caches on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
-#.github/workflows/github-cache-prune.yml
+name: Cache Prune
+run-name: "Pruned Old Caches on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
 
 on:
   workflow_dispatch:
@@ -9,7 +8,7 @@ on:
     types:
       - completed
     workflows:
-      - "GitHub Actions Prune"
+      - "Actions Prune"
     branches:
       - main
 
@@ -39,16 +38,6 @@ jobs:
         timeout-minutes: 1
 
 
-      - name: "Install GitHub Actions Cache Extension"
-        run: |
-          gh extension install actions/gh-actions-cache
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-      - name: "Prune Older Cache Keys (Keep minutes old)"
-        continue-on-error: true
+      - name: "Prune stale caches"
+        uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-caches@main
         timeout-minutes: 5
-        run: ./src/main/sh/clean-workflow-run-caches.sh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
