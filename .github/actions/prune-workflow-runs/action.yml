@@ -10,6 +10,10 @@ inputs:
     description: "Number of recent runs to keep per workflow"
     required: false
     default: '2'
+  stale-hours:
+    description: "On main, delete non-main branch runs older than this many hours"
+    required: false
+    default: '2'
   max-parallel:
     description: "Maximum parallel delete requests"
     required: false
@@ -29,5 +33,6 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         KEEP_LAST: ${{ inputs.keep-last }}
+        STALE_HOURS: ${{ inputs.stale-hours }}
         MAX_PARALLEL: ${{ inputs.max-parallel }}
       run: ${{ github.action_path }}/clean-workflow-runs.sh

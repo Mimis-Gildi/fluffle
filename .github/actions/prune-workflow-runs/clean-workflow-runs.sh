@@ -8,6 +8,7 @@ echo "::notice title=Workflow Runs Pruner::Starting GH CLI pruning run for <$rep
 echo "::notice title=Active Branch Detected::<$branch>"
 
 declare -i KEEP_LAST=${KEEP_LAST:-2}
+declare -i STALE_HOURS=${STALE_HOURS:-2}
 declare -a workflows
 declare -a runs_to_prune
 declare -A queued_per_workflow
@@ -26,9 +27,8 @@ function acquire_workflows_to_process() {
   local -r workflows_as_text="$(gh workflow list --json id,name,path,state -q '.[] | [ .id, .name, .path, .state ] | @csv')"
   while IFS= read -r workflow_row; do
     IFS=',' read -r workflow_id workflow_name workflow_path workflow_state <<< "${workflow_row//}"
-    [[ "$debug" == "on" ]] && echo "::debug title=Reading a Workflow row::Workflow $workflow_name with ID $workflow_id in state $workflow_state and at path  $workflow_path."
     if [[ -z "${workflow_id// }" ]]; then
-      echo "::notice title=NOOP::Workflow $workflow_name has an empty ID that makes no sense. Skipping it!"
+      echo "::error title=NOOP::Workflow $workflow_name has an empty ID that makes no sense. Skipping it!"
     else
       workflows+=("$workflow_id|$workflow_name|$workflow_path|$workflow_state")
       ((workflow_count++))
@@ -38,39 +38,70 @@ function acquire_workflows_to_process() {
   echo "::endgroup::"
 }
 
+function queue_run() {
+  local run_id="$1" workflow_name="$2" reason="$3"
+  runs_to_prune+=("$run_id|$workflow_name")
+  queued_per_workflow[$workflow_name]=$(( ${queued_per_workflow[$workflow_name]:-0} + 1 ))
+  echo "| $run_id | $workflow_name | $reason |" >> $GITHUB_STEP_SUMMARY
+}
+
 function prepare_workflows_to_process() {
   local -i runs_count=0 workflow_runs_count=0
   local -r debug="${1:-off}"
+  local -i cutoff_epoch=$(( EPOCHSECONDS - STALE_HOURS * 3600 ))
 
   echo "::group::Prepare workflows to inspect."
 
   echo "### Queued for Deletion" >> $GITHUB_STEP_SUMMARY
   echo "" >> $GITHUB_STEP_SUMMARY
-  echo "| Run ID | Workflow |" >> $GITHUB_STEP_SUMMARY
-  echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+  echo "| Run ID | Workflow | Reason |" >> $GITHUB_STEP_SUMMARY
+  echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
 
   for workflow_row in "${workflows[@]}"; do
     IFS='|' read -r workflow_id workflow_name workflow_path workflow_state <<< "${workflow_row//\"/}"
-    local branch_filter=""
+
     if [[ "$branch" != "main" ]]; then
-      branch_filter="--branch=$branch"
-    fi
-
-    if ! executed_runs_text="$(gh run list --workflow="$workflow_id" $branch_filter --json databaseId --limit 1000 | jq -r ".[$KEEP_LAST:][]?.databaseId")"; then
-      echo "::error title=Run Query Failed::Could not query runs for workflow $workflow_name"
-      continue
-    fi
-
-    while IFS= read -r run_row; do
-      (( runs_count++ ))
-      if [[ -n "${run_row//}" ]]; then
-        run_entry="$run_row|$workflow_name"
-        runs_to_prune+=("$run_entry")
-        (( workflow_runs_count++ ))
-        queued_per_workflow[$workflow_name]=$(( ${queued_per_workflow[$workflow_name]:-0} + 1 ))
-        echo "| $run_row | $workflow_name |" >> $GITHUB_STEP_SUMMARY
+      # Feature branch: prune this branch only, keep last KEEP_LAST
+      if ! executed_runs_text="$(gh run list --workflow="$workflow_id" --branch="$branch" --json databaseId --limit 1000 | jq -r ".[$KEEP_LAST:][]?.databaseId")"; then
+        echo "::error title=Run Query Failed::Could not query runs for workflow $workflow_name"
+        continue
       fi
-    done <<< "${executed_runs_text}"
+      while IFS= read -r run_id; do
+        (( runs_count++ ))
+        if [[ -n "${run_id//}" ]]; then
+          queue_run "$run_id" "$workflow_name" "branch overflow"
+          (( workflow_runs_count++ ))
+        fi
+      done <<< "${executed_runs_text}"
+    else
+      # Main: pass 1 -- main branch runs, keep last KEEP_LAST
+      if ! executed_runs_text="$(gh run list --workflow="$workflow_id" --branch=main --json databaseId --limit 1000 | jq -r ".[$KEEP_LAST:][]?.databaseId")"; then
+        echo "::error title=Run Query Failed::Could not query main runs for workflow $workflow_name"
+        continue
+      fi
+      while IFS= read -r run_id; do
+        (( runs_count++ ))
+        if [[ -n "${run_id//}" ]]; then
+          queue_run "$run_id" "$workflow_name" "main overflow"
+          (( workflow_runs_count++ ))
+        fi
+      done <<< "${executed_runs_text}"
+
+      # Main: pass 2 -- non-main branches, delete everything older than STALE_HOURS
+      if ! executed_runs_json="$(gh run list --workflow="$workflow_id" --json databaseId,createdAt,headBranch --limit 1000)"; then
+        echo "::error title=Run Query Failed::Could not query all runs for workflow $workflow_name"
+        continue
+      fi
+      while IFS=$'\t' read -r run_id created_at head_branch; do
+        (( runs_count++ ))
+        [[ -z "${run_id//}" || "$head_branch" == "main" ]] && continue
+        local -i run_epoch=$(date -d "$created_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)
+        if (( run_epoch > 0 && run_epoch < cutoff_epoch )); then
+          queue_run "$run_id" "$workflow_name" "stale ($head_branch)"
+          (( workflow_runs_count++ ))
+        fi
+      done < <(echo "$executed_runs_json" | jq -r '.[] | [.databaseId, .createdAt, .headBranch] | @tsv')
+    fi
   done
 
   echo "" >> $GITHUB_STEP_SUMMARY
