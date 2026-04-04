@@ -10,6 +10,13 @@ echo "::notice title=Active Branch Detected::<$branch>"
 declare -i KEEP_LAST=${KEEP_LAST:-2}
 declare -a workflows
 declare -a runs_to_prune
+declare -A queued_per_workflow
+declare -A deleted_per_workflow
+
+echo "## Workflow Runs Pruner" >> $GITHUB_STEP_SUMMARY
+echo "" >> $GITHUB_STEP_SUMMARY
+echo "**Repository:** \`$repository\` | **Branch:** \`$branch\` | **Keep last:** $KEEP_LAST" >> $GITHUB_STEP_SUMMARY
+echo "" >> $GITHUB_STEP_SUMMARY
 
 function acquire_workflows_to_process() {
   local -i workflow_count=0
@@ -27,7 +34,7 @@ function acquire_workflows_to_process() {
       ((workflow_count++))
     fi
   done <<< "$workflows_as_text"
-  echo "::notice title=Acquired Workflows::There are $workflow_count workflows to process."
+  echo "::notice title=Acquired Workflows::$workflow_count workflows to process."
   echo "::endgroup::"
 }
 
@@ -36,13 +43,18 @@ function prepare_workflows_to_process() {
   local -r debug="${1:-off}"
 
   echo "::group::Prepare workflows to inspect."
+
+  echo "### Queued for Deletion" >> $GITHUB_STEP_SUMMARY
+  echo "" >> $GITHUB_STEP_SUMMARY
+  echo "| Run ID | Workflow |" >> $GITHUB_STEP_SUMMARY
+  echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+
   for workflow_row in "${workflows[@]}"; do
     IFS='|' read -r workflow_id workflow_name workflow_path workflow_state <<< "${workflow_row//\"/}"
     local branch_filter=""
     if [[ "$branch" != "main" ]]; then
       branch_filter="--branch=$branch"
     fi
-    echo "::notice title=Reading runs for $workflow_name::Extracting all but $KEEP_LAST runs for $workflow_state workflow with id $workflow_id and path $workflow_path (branch: ${branch_filter:-all})."
 
     if ! executed_runs_text="$(gh run list --workflow="$workflow_id" $branch_filter --json databaseId --limit 1000 | jq -r ".[$KEEP_LAST:][]?.databaseId")"; then
       echo "::error title=Run Query Failed::Could not query runs for workflow $workflow_name"
@@ -55,26 +67,36 @@ function prepare_workflows_to_process() {
         run_entry="$run_row|$workflow_name"
         runs_to_prune+=("$run_entry")
         (( workflow_runs_count++ ))
-        echo "::notice title=Queued::$run_entry."
+        queued_per_workflow[$workflow_name]=$(( ${queued_per_workflow[$workflow_name]:-0} + 1 ))
+        echo "| $run_row | $workflow_name |" >> $GITHUB_STEP_SUMMARY
       fi
     done <<< "${executed_runs_text}"
   done
 
-  echo "::notice title=Prepared workflow runs::Total $runs_count rows processed and $workflow_runs_count queued to prune."
+  echo "" >> $GITHUB_STEP_SUMMARY
+  echo "::notice title=Queued::$workflow_runs_count runs queued from $runs_count rows processed."
   echo "::endgroup::"
 }
 
 function process_workflows_to_process() {
   local -r debug="${1:-off}"
   local -i requests_count=0
+
   echo "::group::Processing deletion requests."
+  echo "" >> $GITHUB_STEP_SUMMARY
+  echo "### Deletion Results" >> $GITHUB_STEP_SUMMARY
+  echo "" >> $GITHUB_STEP_SUMMARY
+
   for run_delete_request in "${runs_to_prune[@]}"; do
     IFS='|' read -r run_id run_workflow_name <<< "$run_delete_request"
     if [[ -n "${run_id// }" ]]; then
       (( requests_count++ ))
       (
-        gh run delete "$run_id"
-        echo "::notice title=Deleted::$run_id of $run_workflow_name"
+        if gh run delete "$run_id"; then
+          deleted_per_workflow[$run_workflow_name]=$(( ${deleted_per_workflow[$run_workflow_name]:-0} + 1 ))
+        else
+          echo "::warning title=Delete Failed::Could not delete run $run_id of $run_workflow_name"
+        fi
       ) &
       if (( requests_count % MAX_PARALLEL == 0 )); then
         wait
@@ -82,6 +104,20 @@ function process_workflows_to_process() {
     fi
   done
   wait
+
+  # Summary annotation: counts per workflow
+  local summary_parts=()
+  for wf_name in ${(k)queued_per_workflow}; do
+    local deleted=${deleted_per_workflow[$wf_name]:-0}
+    local queued=${queued_per_workflow[$wf_name]}
+    summary_parts+=("$wf_name: $deleted/$queued")
+    echo "- **$wf_name**: $deleted deleted of $queued queued" >> $GITHUB_STEP_SUMMARY
+  done
+
+  local annotation_text="${(j:, :)summary_parts}"
+  echo "::notice title=Pruning Complete::$requests_count total. ${annotation_text}"
+
+  echo "" >> $GITHUB_STEP_SUMMARY
   echo "::endgroup::"
 }
 
