@@ -36,3 +36,8 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-runs@main
         timeout-minutes: 5
 
+      - name: "Cleanup orphaned caches"
+        if: always()
+        uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-caches@main
+        timeout-minutes: 5
+

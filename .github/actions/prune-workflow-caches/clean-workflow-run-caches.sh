@@ -7,7 +7,7 @@ echo "::notice title=Cache Pruner::Starting GH CLI cache pruning in <$repository
 echo "::notice title=Active Branch::<$branch>"
 
 declare -i skipped=0 deleted=0 failed=0
-readonly delete_log=$(mktemp)
+declare -i pass_deleted=0
 
 echo "## Workflow Cache Pruner" >> $GITHUB_STEP_SUMMARY
 echo "" >> $GITHUB_STEP_SUMMARY
@@ -16,7 +16,8 @@ echo "" >> $GITHUB_STEP_SUMMARY
 echo "| Cache ID | Size | Branch | Age | Action |" >> $GITHUB_STEP_SUMMARY
 echo "|----------|------|--------|-----|--------|" >> $GITHUB_STEP_SUMMARY
 
-function acquire_cache_ids_and_process() {
+function prune_one_pass() {
+  pass_deleted=0
   while IFS= read -r cache_entry_row; do
     read -r id size scale ref age age_scale passe <<< "$cache_entry_row"
     [[ -z "${id//}" ]] && continue
@@ -27,7 +28,7 @@ function acquire_cache_ids_and_process() {
     else
       if gh actions-cache delete "$id" --confirm 2>/dev/null; then
         (( deleted++ ))
-        echo "deleted" >> "$delete_log"
+        (( pass_deleted++ ))
         echo "| $id | $size $scale | $ref | $age $age_scale | deleted |" >> $GITHUB_STEP_SUMMARY
       else
         (( failed++ ))
@@ -37,11 +38,21 @@ function acquire_cache_ids_and_process() {
   done < <(gh actions-cache list --order desc --limit 100)
 }
 
-acquire_cache_ids_and_process
+declare -i pass=0
+while true; do
+  (( pass++ ))
+  echo "::group::Cache prune pass $pass"
+  prune_one_pass
+  echo "::endgroup::"
+  if (( pass_deleted == 0 )); then
+    echo "::notice title=Pass $pass::Nothing left to prune."
+    break
+  fi
+  echo "::notice title=Pass $pass::Deleted $pass_deleted, continuing."
+done
 
 # Summary
 echo "" >> $GITHUB_STEP_SUMMARY
-echo "**Deleted:** $deleted | **Skipped:** $skipped | **Failed:** $failed" >> $GITHUB_STEP_SUMMARY
+echo "**Passes:** $pass | **Deleted:** $deleted | **Skipped:** $skipped | **Failed:** $failed" >> $GITHUB_STEP_SUMMARY
 
-echo "::notice title=Cache Pruning Complete::Deleted $deleted, skipped $skipped (recent), failed $failed"
-rm -f "$delete_log"
+echo "::notice title=Cache Pruning Complete::$pass passes, deleted $deleted, skipped $skipped (recent), failed $failed"

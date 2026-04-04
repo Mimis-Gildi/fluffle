@@ -16,11 +16,15 @@ runs:
 
   steps:
 
-    - name: Install GitHub Actions Cache Extension
+    - name: Ensure GitHub Actions Cache Extension
       shell: zsh -l {0}
       env:
         GH_TOKEN: ${{ inputs.token }}
-      run: gh extension install actions/gh-actions-cache 2>/dev/null || true
+      run: |
+        if ! gh actions-cache --help &>/dev/null; then
+          echo "::notice title=Cache Extension::Installing gh-actions-cache extension."
+          gh extension install actions/gh-actions-cache
+        fi
 
     - id: prune-caches
       shell: zsh -l {0}
