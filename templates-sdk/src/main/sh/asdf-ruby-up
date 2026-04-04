@@ -1,0 +1,21 @@
+#!/usr/bin/env zsh
+
+[ ! -d ~/.asdf ] && \
+git clone https://github.com/asdf-vm/asdf.git ~/.asdf && \
+cd ~/.asdf  && \
+make && \
+git status || echo -e "$HOME/.asdf is NOT processed!"
+
+asdf plugin add nodejs
+asdf plugin add ruby
+asdf install nodejs lts
+asdf install ruby 3.3.5
+asdf current
+
+asdf set -u nodejs lts
+asdf set -u ruby 3.3.5
+
+node --version
+ruby --version
+
+echo -e "\n\nDone with ASDF!"
