@@ -11,7 +11,7 @@ declare -i KEEP_LAST=${KEEP_LAST:-2}
 declare -a workflows
 declare -a runs_to_prune
 declare -A queued_per_workflow
-declare -A deleted_per_workflow
+readonly delete_log=$(mktemp)
 
 echo "## Workflow Runs Pruner" >> $GITHUB_STEP_SUMMARY
 echo "" >> $GITHUB_STEP_SUMMARY
@@ -93,7 +93,7 @@ function process_workflows_to_process() {
       (( requests_count++ ))
       (
         if gh run delete "$run_id"; then
-          deleted_per_workflow[$run_workflow_name]=$(( ${deleted_per_workflow[$run_workflow_name]:-0} + 1 ))
+          echo "$run_workflow_name" >> "$delete_log"
         else
           echo "::warning title=Delete Failed::Could not delete run $run_id of $run_workflow_name"
         fi
@@ -105,14 +105,15 @@ function process_workflows_to_process() {
   done
   wait
 
-  # Summary annotation: counts per workflow
+  # Tally deletions from temp file (survives subshell forks)
   local summary_parts=()
   for wf_name in ${(k)queued_per_workflow}; do
-    local deleted=${deleted_per_workflow[$wf_name]:-0}
+    local -i deleted=$(grep -c "^${wf_name}$" "$delete_log" 2>/dev/null || echo 0)
     local queued=${queued_per_workflow[$wf_name]}
     summary_parts+=("$wf_name: $deleted/$queued")
     echo "- **$wf_name**: $deleted deleted of $queued queued" >> $GITHUB_STEP_SUMMARY
   done
+  rm -f "$delete_log"
 
   local annotation_text="${(j:, :)summary_parts}"
   echo "::notice title=Pruning Complete::$requests_count total. ${annotation_text}"
