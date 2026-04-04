@@ -48,7 +48,8 @@ function queue_run() {
 function prepare_workflows_to_process() {
   local -i runs_count=0 workflow_runs_count=0
   local -r debug="${1:-off}"
-  local -i cutoff_epoch=$(( EPOCHSECONDS - STALE_HOURS * 3600 ))
+  local -i now_epoch=$(date +%s)
+  local -i cutoff_epoch=$(( now_epoch - STALE_HOURS * 3600 ))
 
   echo "::group::Prepare workflows to inspect."
 
