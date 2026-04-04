@@ -32,8 +32,7 @@ jobs:
         timeout-minutes: 1
 
 
-      - name: "Cleanup old action runs leaving the last one for each workflow"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./src/main/sh/clean-workflow-runs.sh
+      - name: "Cleanup old action runs"
+        uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-runs@main
         timeout-minutes: 5
+

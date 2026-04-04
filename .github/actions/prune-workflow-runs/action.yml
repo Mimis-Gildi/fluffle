@@ -1,0 +1,33 @@
+name: Prune Workflow Runs
+description: "Prunes old workflow runs, keeping the last N per workflow. Branch-scoped on feature branches, all branches on main."
+author: "VK (rdd13r)"
+branding:
+  icon: "scissors"
+  color: "orange"
+
+inputs:
+  keep-last:
+    description: "Number of recent runs to keep per workflow"
+    required: false
+    default: '2'
+  max-parallel:
+    description: "Maximum parallel delete requests"
+    required: false
+    default: '100'
+  token:
+    description: "GitHub token with actions:write permission"
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: prune
+      shell: zsh -l {0}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        KEEP_LAST: ${{ inputs.keep-last }}
+        MAX_PARALLEL: ${{ inputs.max-parallel }}
+      run: ${{ github.action_path }}/clean-workflow-runs.sh
