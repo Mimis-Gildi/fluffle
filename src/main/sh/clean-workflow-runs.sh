@@ -7,6 +7,7 @@ readonly branch="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 echo "::notice title=Workflow Runs Pruner::Starting GH CLI pruning run for <$repository>"
 echo "::notice title=Active Branch Detected::<$branch>"
 
+declare -i KEEP_LAST=${KEEP_LAST:-2}
 declare -a workflows
 declare -a runs_to_prune
 
@@ -37,9 +38,13 @@ function prepare_workflows_to_process() {
   echo "::group::Prepare workflows to inspect."
   for workflow_row in "${workflows[@]}"; do
     IFS='|' read -r workflow_id workflow_name workflow_path workflow_state <<< "${workflow_row//\"/}"
-    echo "::notice title=Reading runs for $workflow_name::Extracting all but one runs for $workflow_state workflow with id $workflow_id and path $workflow_path."
+    local branch_filter=""
+    if [[ "$branch" != "main" ]]; then
+      branch_filter="--branch=$branch"
+    fi
+    echo "::notice title=Reading runs for $workflow_name::Extracting all but $KEEP_LAST runs for $workflow_state workflow with id $workflow_id and path $workflow_path (branch: ${branch_filter:-all})."
 
-    if ! executed_runs_text="$(gh run list --workflow="$workflow_id" --json databaseId --limit 1000 | jq -r '.[1:][]?.databaseId')"; then
+    if ! executed_runs_text="$(gh run list --workflow="$workflow_id" $branch_filter --json databaseId --limit 1000 | jq -r ".[$KEEP_LAST:][]?.databaseId")"; then
       echo "::error title=Run Query Failed::Could not query runs for workflow $workflow_name"
       continue
     fi
