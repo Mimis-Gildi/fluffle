@@ -42,5 +42,3 @@ jobs:
 
       - name: "Welcome first-time contributor"
         uses: Mimis-Gildi/fluffle/.github/actions/welcome-first-contributor@main
-        with:
-          test_run: 'true'
