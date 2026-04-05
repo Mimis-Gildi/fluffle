@@ -2,7 +2,7 @@ name: War Canary
 run-name: "Introspect Runner on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})."
 
 on:
-  push:
+#  push:
   workflow_call:
     inputs:
       host-info:

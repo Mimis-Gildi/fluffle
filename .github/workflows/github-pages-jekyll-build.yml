@@ -3,11 +3,11 @@ run-name: "Jekyll built and bundles on ${{ github.repository }} by ${{ github.ac
 #.github/workflows/github-pages-deploy.yml
 
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
+#  pull_request:
+#    types:
+#      - opened
+#      - reopened
+#      - synchronize
   workflow_dispatch:
   workflow_call:
 
