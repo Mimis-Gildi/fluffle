@@ -2,6 +2,8 @@ name: Welcome New User
 run-name: "Greeted a new user on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
 
 on:
+  workflow_dispatch:
+  workflow_call:
   issues:
     types:
       - opened
