@@ -4,6 +4,12 @@ run-name: "Greeted a new user on ${{ github.repository }} by ${{ github.actor }}
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      test_run:
+        description: "Execute against every issue and PR, skip first-time check"
+        required: false
+        type: boolean
+        default: false
   issues:
     types:
       - opened
@@ -44,3 +50,5 @@ jobs:
 
       - name: "Welcome first-time contributor"
         uses: Mimis-Gildi/fluffle/.github/actions/welcome-first-contributor@main
+        with:
+          test_run: ${{ inputs.test_run }}
