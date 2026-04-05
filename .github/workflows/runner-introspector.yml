@@ -2,7 +2,7 @@ name: War Canary
 run-name: "Introspect Runner on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})."
 
 on:
-  push:
+#  push:
   workflow_call:
     inputs:
       host-info:
@@ -38,7 +38,7 @@ jobs:
 
       - name: Detect Runner Type
         id: env
-        uses: ./.github/actions/detect-runner-type
+        uses: Mimis-Gildi/fluffle/.github/actions/detect-runner-type@main
 
 
       - name: Hosted Infra Snapshot
@@ -61,7 +61,7 @@ jobs:
         id: introspect
         if: steps.env.outputs.is-self-hosted == 'true'
         timeout-minutes: 7
-        uses: ./.github/actions/introspect-runner
+        uses: Mimis-Gildi/fluffle/.github/actions/introspect-runner@main
         with:
           validate-sdks: true
           mandatory-tools: "sdkman,java,gradle,kotlin,ruby,conda,mamba,python"

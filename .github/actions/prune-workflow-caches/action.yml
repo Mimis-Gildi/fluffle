@@ -1,0 +1,33 @@
+name: Prune Workflow Caches
+description: "Deletes stale GitHub Actions caches, keeping only those created within the last few minutes."
+author: "VK (rdd13r)"
+branding:
+  icon: "trash-2"
+  color: "orange"
+
+inputs:
+  token:
+    description: "GitHub token with actions:write permission"
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Ensure GitHub Actions Cache Extension
+      shell: zsh -l {0}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        if ! gh actions-cache --help &>/dev/null; then
+          echo "::notice title=Cache Extension::Installing gh-actions-cache extension."
+          gh extension install actions/gh-actions-cache
+        fi
+
+    - id: prune-caches
+      shell: zsh -l {0}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: ${{ github.action_path }}/clean-workflow-run-caches.sh
