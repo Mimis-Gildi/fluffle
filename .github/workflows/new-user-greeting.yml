@@ -1,0 +1,46 @@
+name: Welcome New User
+run-name: "Greeted a new user on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+on:
+  issues:
+    types:
+      - opened
+      - assigned
+      - labeled
+  pull_request:
+    types:
+      - opened
+      - assigned
+      - labeled
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-greeting-group"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: zsh -l {0}
+
+jobs:
+
+  first-time-user-greeting:
+    name: "Welcoming new contributors!"
+    runs-on: self-hosted
+    timeout-minutes: 2
+
+    steps:
+
+      - name: "Checkout for community content"
+        uses: actions/checkout@v6.0.2
+        with:
+          sparse-checkout: .github/messages
+
+      - name: "Welcome first-time contributor"
+        uses: Mimis-Gildi/fluffle/.github/actions/welcome-first-contributor@main
+        with:
+          test_run: 'true'
