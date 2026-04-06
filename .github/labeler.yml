@@ -3,17 +3,24 @@ constitution:
       - any-glob-to-any-file:
         - '*'
         - build-logic/**
-        - .github/**
 
-site:
-  - changed-files:
-      - any-glob-to-any-file: sites/**
-
-assets:
-  - changed-files:
-      - any-glob-to-any-file: assets/**
-
-documentation:
+action:
   - changed-files:
       - any-glob-to-any-file:
-          - docs/**
+        - .github/actions/**
+        - .github/workflows/**
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+        - gradle/**
+        - '*.gradle.kts'
+        - gradle.properties
+        - .sdkmanrc
+
+maintenance:
+  - changed-files:
+      - any-glob-to-any-file:
+        - src/main/sh/**
+        - .github/labeler.yml
+        - .gitignore
