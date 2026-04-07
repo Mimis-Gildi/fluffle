@@ -70,6 +70,12 @@ jobs:
         if: steps.sdkman.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-sdkman@main
 
+
+
+      - name: Introspect Conda
+        if: steps.env.outputs.is-self-hosted == 'true'
+        run: conda info
+
 #      - name: Toolchain Validation
 #        id: introspect
 #        if: steps.env.outputs.is-self-hosted == 'true'
