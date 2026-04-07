@@ -1,5 +1,5 @@
-name: "Upgrade SDKMAN"
-description: "Runs sdk selfupdate when detect-sdkman reports behind versions."
+name: "Upgrade Conda"
+description: "Runs ML Environment upgrade"
 author: "rdd13r"
 branding:
   icon: "upload-cloud"
@@ -17,4 +17,4 @@ runs:
 
     - id: upgrade
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/upgrade-sdkman.sh
+      run: ${{ github.action_path }}/upgrade-conda.sh
