@@ -1,6 +1,6 @@
 name: Append Logs to Release Notes
 description: "Append a convenience list of files and messages to release notes file."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "book-open"
   color: "green"

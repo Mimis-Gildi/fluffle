@@ -1,6 +1,6 @@
 name: Feature Branch Guard
 description: "Fail fast unless PR source matches feature branch pattern and target is main"
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "git-branch"
   color: "red"

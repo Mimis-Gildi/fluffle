@@ -74,7 +74,7 @@ jobs:
 
       - name: Introspect Conda
         if: steps.env.outputs.is-self-hosted == 'true'
-        run: conda info
+
 
 #      - name: Toolchain Validation
 #        id: introspect

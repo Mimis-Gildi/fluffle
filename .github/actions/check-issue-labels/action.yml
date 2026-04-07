@@ -1,6 +1,6 @@
 name: Check Issue Labels
 description: "Extracts GitHub Issue labels and checks if all required ones are present"
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "tag"
   color: "yellow"

@@ -1,6 +1,6 @@
 name: Commit and Push Files
 description: "Commit and push one or more files with a custom message."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "upload"
   color: "purple"

@@ -1,6 +1,6 @@
 name: Prune Workflow Runs
 description: "Prunes old workflow runs, keeping the last N per workflow. Branch-scoped on feature branches, all branches on main."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "scissors"
   color: "orange"

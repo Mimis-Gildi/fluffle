@@ -1,6 +1,6 @@
 name: Introspect Runner
 description: "Outputs whether we're running on self-hosted infra or a hosted GitHub runner"
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "server"
   color: "red"

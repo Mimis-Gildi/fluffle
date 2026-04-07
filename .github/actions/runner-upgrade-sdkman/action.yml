@@ -1,6 +1,6 @@
 name: "Upgrade SDKMAN"
 description: "Runs sdk selfupdate when detect-sdkman reports behind floor."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "upload-cloud"
   color: "orange"

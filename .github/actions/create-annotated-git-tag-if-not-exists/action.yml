@@ -1,7 +1,7 @@
 name: Create Annotated Git Tag if Not Exists
 description: "Checks if the specified Git tag exists; creates and pushes it only if missing."
 
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "tag"
   color: "purple"

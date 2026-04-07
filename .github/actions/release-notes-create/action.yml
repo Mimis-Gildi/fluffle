@@ -1,6 +1,6 @@
 name: Release Notes Commit
 description: "Commit release notes file changes expected in /releases/vX.X.X.md"
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "check"
   color: "green"

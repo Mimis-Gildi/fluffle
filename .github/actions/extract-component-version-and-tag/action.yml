@@ -3,7 +3,7 @@ description: >
   Reads the 'version=' property from a configuration file (e.g., gradle.properties)
   and emits both the semantic version and its git tag form ('vX.Y.Z').
 
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "search"
   color: "green"

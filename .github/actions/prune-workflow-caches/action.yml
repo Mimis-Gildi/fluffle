@@ -1,6 +1,6 @@
 name: Prune Workflow Caches
 description: "Deletes stale GitHub Actions caches, keeping only those created within the last few minutes."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "trash-2"
   color: "orange"

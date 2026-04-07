@@ -1,6 +1,6 @@
 name: Extract Commit Messages
 description: "Extract commit messages between base and current HEAD."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "list"
   color: "green"

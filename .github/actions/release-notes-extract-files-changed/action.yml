@@ -1,6 +1,6 @@
 name: Extract Changed Files
 description: "Extract changed files between base and current HEAD."
-author: "VK (rdd13r)"
+author: "rdd13r"
 branding:
   icon: "file-plus"
   color: "green"
