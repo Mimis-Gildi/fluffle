@@ -18,8 +18,5 @@ readonly mamba_version=$(mamba  --version 2>/dev/null) || exit 0  # 2.3.3
 if behind "$py_ml_required" "$py_ml_version" || behind "$conda_required" "$conda_version" || behind "$mamba_required" "$mamba_version"; then
   printf '::warning title=Conda is behind::Python %s (%s), Conda %s (%s), Mamba %s (%s)\n' \
     "$py_ml_version" "$py_ml_required" "$conda_version" "$conda_required" "$mamba_version" "$mamba_required"
-  echo "failed=true" >> "$GITHUB_OUTPUT"
-  exit 0
+  echo "failed=true" > "$GITHUB_OUTPUT"
 fi
-
-echo "failed=false" >> "$GITHUB_OUTPUT"
