@@ -74,7 +74,11 @@ jobs:
 
       - name: Introspect Conda
         if: steps.env.outputs.is-self-hosted == 'true'
-
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
+        with:
+          conda-version: '25.9.1'
+          mamba-version: '2.3.3'
+          python-version: '3.12.12'
 
 #      - name: Toolchain Validation
 #        id: introspect
