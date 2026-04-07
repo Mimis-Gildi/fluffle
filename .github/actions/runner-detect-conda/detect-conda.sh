@@ -2,7 +2,7 @@
 
 readonly py_ml_version="$1"
 readonly conda_version="$2"
-readonly mamba-version="$3"
+readonly mamba_version="$3"
 
 source conda-activate.sh
 
