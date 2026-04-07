@@ -4,7 +4,7 @@ readonly py_ml_version="$1"
 readonly conda_version="$2"
 readonly mamba_version="$3"
 
-source conda-activate.sh
+source ./conda-activate.sh
 
 conda activate ml
 
