@@ -4,7 +4,7 @@ set -uo pipefail
 readonly floor_sdkman="$1"
 readonly floor_native="$2"
 
-source "${SDKMAN_INIT:-}" 2>/dev/null || true
+[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
 printf '::notice title=SDKMAN sourced::sdkman_init=%s, floor_sdkman=%s, floor_native=%s\n' "${SDKMAN_INIT:-}" "$floor_sdkman" "$floor_native"
 
 sdk
