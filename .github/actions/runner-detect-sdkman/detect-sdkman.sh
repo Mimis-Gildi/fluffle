@@ -1,5 +1,4 @@
 #!/usr/bin/env zsh
-set -uo pipefail
 
 readonly floor_sdkman="$1"
 readonly floor_native="$2"
