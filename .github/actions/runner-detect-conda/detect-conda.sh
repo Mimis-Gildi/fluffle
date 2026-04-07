@@ -1,8 +1,8 @@
 #!/usr/bin/env zsh
 
-readonly py_ml_version="$1"
-readonly conda_version="$2"
-readonly mamba_version="$3"
+readonly py_ml_required="$1"
+readonly conda_required="$2"
+readonly mamba_required="$3"
 
 readonly activation="${0:A:h}/conda-activate.sh"
 [[ -s "$activation" ]] && source "$activation"
