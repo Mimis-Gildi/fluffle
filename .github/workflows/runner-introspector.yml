@@ -62,8 +62,8 @@ jobs:
         if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-sdkman@main
         with:
-          sdkman-version: '5.21.0'
-          sdkman-native: '0.7.16'
+          sdkman-version: '5.22.6'
+          sdkman-native: '0.7.34'
 
 #      - name: Toolchain Validation
 #        id: introspect
