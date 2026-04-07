@@ -3,6 +3,8 @@
 readonly floor_sdkman="$1"
 readonly floor_native="$2"
 
+exit 1
+
 [[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
 sdk_output=$(sdk version 2>/dev/null) || exit 0
 
