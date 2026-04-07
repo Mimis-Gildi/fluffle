@@ -1,6 +1,6 @@
 name: Label Pull Request
 run-name: "Labeled Pull Request examining content on ${{ github.actor }} with ${{ github.event_name }}"
-#.github/workflows/custom-pr-labels.yml
+#.github/workflows/labeler.yml
 # https://github.com/actions/labeler
 
 on:
@@ -20,7 +20,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: riddles-labeling-group
+  group: "${{ github.workflow }}-${{ github.ref }}-labeler"
   cancel-in-progress: true
 
 defaults:
@@ -36,7 +36,23 @@ jobs:
 
     steps:
 
+      - name: "Checkout to check for labeler config"
+        uses: actions/checkout@v6.0.2
+        with:
+          sparse-checkout: .github/labeler.yml
+
+      - name: "Check for labeler configuration"
+        id: config-check
+        run: |
+          if [[ -f .github/labeler.yml ]]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "::notice title=Labeler::No .github/labeler.yml found. Skipping."
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Label Pull Request pushing labels to GitHub Pull Request"
+        if: steps.config-check.outputs.found == 'true'
         uses: actions/labeler@v6.0.1
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
