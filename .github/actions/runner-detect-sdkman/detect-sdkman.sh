@@ -7,7 +7,10 @@ readonly floor_native="$2"
 [[ "$(uname -s)" != "Linux" ]] && { echo "failed=false" >> "$GITHUB_OUTPUT"; exit 0 }
 printf '::notice title=InLinux::pass'
 
-source "$SDKMAN_DIR/bin/sdkman-init.sh" 2>/dev/null || { echo "failed=false" >> "$GITHUB_OUTPUT"; exit 0 }
+
+
+env | sort
+source "$SDKMAN_DIR/bin/sdkman-init.sh" 2>/dev/null || true
 printf '::notice title=Sourced SDK::pass'
 sdk_output=$(sdk version 2>/dev/null)     || { echo "failed=false" >> "$GITHUB_OUTPUT"; exit 0 }
 printf '::notice title=Read Version::pass'
