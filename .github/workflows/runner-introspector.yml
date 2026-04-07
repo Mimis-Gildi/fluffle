@@ -82,7 +82,7 @@ jobs:
           python-version: '4.12.13'
 
       - name: Upgrade Conda
-        if: steps.env.conda.failed == 'true'
+        if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 
 #      - name: Toolchain Validation
