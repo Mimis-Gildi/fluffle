@@ -4,7 +4,7 @@ readonly py_ml_required="$1"
 readonly conda_required="$2"
 readonly mamba_required="$3"
 
-readonly activation="${0:A:h}/conda-activate.sh"
+readonly activation="${0:A:h}/conda-activate.sha"
 [[ -s "$activation" ]] && source "$activation"
 
 conda activate ml || exit 0
