@@ -1,8 +1,9 @@
 #!/usr/bin/env zsh
 
 echo -e "## Upgrade Java\n" >> $GITHUB_STEP_SUMMARY
-
 echo "upgraded=false" > "$GITHUB_OUTPUT"
+
+export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
 sdk version
 

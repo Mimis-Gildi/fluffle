@@ -3,6 +3,7 @@
 readonly floor_sdkman="$1"
 readonly floor_native="$2"
 
+export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
 sdk version
 

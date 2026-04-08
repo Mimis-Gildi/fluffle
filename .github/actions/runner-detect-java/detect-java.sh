@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 
+export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
 sdk version
 
