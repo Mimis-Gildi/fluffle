@@ -4,7 +4,7 @@ run-name: "Jekyll built on ${{ github.repository }} by ${{ github.actor }} with 
 on:
   push:
     branches:
-      - main
+      - '[0-9]+-**'
   pull_request:
     types:
       - opened
