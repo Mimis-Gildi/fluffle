@@ -23,9 +23,10 @@ defaults:
     shell: zsh -l {0}
 
 jobs:
+
   canary-flight-job:
     runs-on: [self-hosted, peep]
-    timeout-minutes: 11
+    timeout-minutes: 3
 
     steps:
 
@@ -35,11 +36,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-
       - name: Detect Runner Type
         id: env
         uses: Mimis-Gildi/fluffle/.github/actions/detect-runner-type@main
-
 
       - name: Hosted Infra Snapshot
         if: inputs.host-info
@@ -56,6 +55,12 @@ jobs:
           echo "::notice title=Runner::${{ steps.env.outputs.runner-name }} (${{ steps.env.outputs.runner-nick }})"
           echo "::endgroup::"
 
+  sdk-managers-job:
+    needs: canary-flight-job
+    runs-on: [ self-hosted, peep ]
+    timeout-minutes: 11
+
+    steps:
 
       - name: Detect SDKMAN
         id: sdkman
@@ -85,7 +90,12 @@ jobs:
         if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 
+  ruby-job:
+    needs: canary-flight-job
+    runs-on: [ self-hosted, peep ]
+    timeout-minutes: 2
 
+    steps:
       - name: Introspect Ruby
         id: ruby
         if: steps.env.outputs.is-self-hosted == 'true'
@@ -95,6 +105,13 @@ jobs:
           gems-version: '3.5.16'
           bundler-version: '2.7.2'
 
+
+  java-manager-job:
+    needs: sdk-managers-job
+    runs-on: [ self-hosted, peep ]
+    timeout-minutes: 5
+
+    steps:
 
       - name: Introspect Java
         id: java
@@ -108,12 +125,13 @@ jobs:
 
 
   sdk-candidates:
-    needs: canary-flight-job
+    needs: sdk-managers-job
     runs-on: [self-hosted, peep]
     timeout-minutes: 7
     strategy:
       matrix:
         candidate: [gradle, kotlin, kobweb, maven, sbt, scala]
+
     steps:
 
       - name: Detect ${{ matrix.candidate }}
