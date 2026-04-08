@@ -7,3 +7,4 @@ _We hold our thoughts and stickies here..._
 - \[force up\] - encourages a major version bump.
 
 \[force up]\ trumps \[push up\].
+And \[skip up/ci\] trumps everything.
