@@ -2,7 +2,9 @@
 
 echo -e "## SDKMan Upgrade\n" >> $GITHUB_STEP_SUMMARY
 
-[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
+source "$SDKMAN_INIT"
+sdk version
+
 sdk selfupdate 2>/dev/null || {
   echo "upgraded=false" >> "$GITHUB_OUTPUT";
   echo "SDKMan is NOT self-updated." >> $GITHUB_STEP_SUMMARY

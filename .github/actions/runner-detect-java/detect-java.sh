@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 
 source "$SDKMAN_INIT"
+sdk version
 
 sdk update
 sdk flush tmp

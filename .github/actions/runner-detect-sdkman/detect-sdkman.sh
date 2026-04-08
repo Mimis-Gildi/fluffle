@@ -4,6 +4,8 @@ readonly floor_sdkman="$1"
 readonly floor_native="$2"
 
 source "$SDKMAN_INIT"
+sdk version
+
 sdk_output=$(sdk version 2>/dev/null)
 
 readonly actual_sdkman=$(echo "$sdk_output" | awk '/^script:/ { print $2 }')

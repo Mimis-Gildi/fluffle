@@ -4,6 +4,7 @@ echo -e "## Upgrade Java\n" >> $GITHUB_STEP_SUMMARY
 
 echo "upgraded=false" > "$GITHUB_OUTPUT"
 source "$SDKMAN_INIT"
+sdk version
 
 sdk update
 
