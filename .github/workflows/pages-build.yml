@@ -1,5 +1,5 @@
 name: Build Site
-run-name: "Jekyll built and bundles on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+run-name: "Jekyll built on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
 
 on:
   push:
@@ -29,11 +29,11 @@ defaults:
 jobs:
 
   build-site:
-      runs-on: [self-hosted, jekyll]
-      timeout-minutes: 9
+    runs-on: [ self-hosted, jekyll ]
+    timeout-minutes: 9
 
 
-      steps:
+    steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v6.0.2
 
@@ -48,5 +48,5 @@ jobs:
       - name: 📤 Upload site artifact
         uses: actions/upload-pages-artifact@v4.0.0
         timeout-minutes: 3
-        with:
-          path: _site
+#        with:
+#          path: _site
