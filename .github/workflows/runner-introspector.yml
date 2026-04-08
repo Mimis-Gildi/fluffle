@@ -64,7 +64,6 @@ jobs:
 
       - name: Detect SDKMAN
         id: sdkman
-        if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-sdkman@main
         with:
           sdkman-version: '5.22.4'
@@ -78,7 +77,6 @@ jobs:
 
       - name: Introspect Conda
         id: conda
-        if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
           conda-version: '26.3.1'
@@ -98,7 +96,6 @@ jobs:
     steps:
       - name: Introspect Ruby
         id: ruby
-        if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-ruby@main
         with:
           ruby-version: '3.3.5'
@@ -115,7 +112,6 @@ jobs:
 
       - name: Introspect Java
         id: java
-        if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-java@main
 
       - name: Upgrade Java
