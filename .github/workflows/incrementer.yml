@@ -103,6 +103,7 @@ jobs:
         uses: actions/checkout@v6.0.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Calculate version
         id: version-patch
@@ -145,6 +146,7 @@ jobs:
         uses: actions/checkout@v6.0.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Calculate version
         id: version-minor
@@ -185,6 +187,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           fetch-depth: 0
           fetch-tags: true
 
