@@ -240,5 +240,7 @@ jobs:
             echo ""
             echo "| Type | Version | Branch |"
             echo "|------|---------|--------|"
-            echo "| $TYPE | ${{ needs.increment-running.outputs.old }}${{ needs.increment-minor.outputs.old }}${{ needs.increment-major.outputs.old }} -> ${{ needs.increment-running.outputs.new }}${{ needs.increment-minor.outputs.new }}${{ needs.increment-major.outputs.new }} | ${GITHUB_REF#refs/heads/} |"
+            OLD="${{ needs.increment-running.outputs.old }}${{ needs.increment-minor.outputs.old }}${{ needs.increment-major.outputs.old }}"
+            NEW="${{ needs.increment-running.outputs.new }}${{ needs.increment-minor.outputs.new }}${{ needs.increment-major.outputs.new }}"
+            [[ -n "$NEW" ]] && echo "| $TYPE | $OLD -> $NEW | ${GITHUB_REF#refs/heads/} |" || echo "| $TYPE | ${{ needs.initialize-versioning.outputs.current }} (unchanged) | ${GITHUB_REF#refs/heads/} |"
           } >> $GITHUB_STEP_SUMMARY
