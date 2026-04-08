@@ -78,8 +78,8 @@ jobs:
           LAST_AUTHOR=$(git log -1 --format='%an')
           
           echo "type=patch" > $GITHUB_OUTPUT
-          [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" ]] && echo "type=minor" > $GITHUB_OUTPUT
-          [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" ]] && echo "type=major" > $GITHUB_OUTPUT
+          [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && echo "type=minor" > $GITHUB_OUTPUT
+          [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && echo "type=major" > $GITHUB_OUTPUT
 
           [[ "${LAST_MSG:l}" == *"[skip ci]"* || "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && echo "type=skip" > $GITHUB_OUTPUT
 
