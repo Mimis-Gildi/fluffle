@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: "${{ github.workflow }}-jekyll"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -50,3 +50,4 @@ jobs:
         timeout-minutes: 3
         with:
           path: site/_site/
+          retention-days: '2'

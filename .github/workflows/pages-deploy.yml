@@ -1,12 +1,12 @@
-name: GitHub Site Publish by Pages
-run-name: "Publish Pages Artifact on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
-#.github/workflows/github-pages-deploy.yml
+name: Publish Site
+run-name: "Publish on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
 
 on:
-#  push:
-#    branches:
-#      - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -24,15 +24,15 @@ defaults:
 jobs:
 
   build-site:
-    uses: ./.github/workflows/pages-build.yml
+    uses: Mimis-Gildi/fluffle/.github/workflows/pages-build.yml@main
     secrets: inherit
     permissions:
       contents: read
 
 
   deploy-to-default-pages:
-    runs-on: [self-hosted, site]
-    timeout-minutes: 11
+    runs-on: [ self-hosted, site ]
+    timeout-minutes: 3
     needs: build-site
     environment:
       name: github-pages
@@ -40,13 +40,13 @@ jobs:
 
     steps:
 
-      - name: 🚀 Deploy to GitHub Pages
+      - name: Publish Pages
         id: deployment
-        timeout-minutes: 9
+        timeout-minutes: 3
         uses: actions/deploy-pages@v5.0.0
         with:
           artifact_name: github-pages
-          reporting_interval: '2500'
-          error_count: '7'
-          timeout: '420000'
+          reporting_interval: '700'
+          error_count: '21'
+          timeout: '150000'
 
