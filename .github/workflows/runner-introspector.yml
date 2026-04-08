@@ -85,6 +85,13 @@ jobs:
         if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 
+      - name: Introspect Ruby
+        id: ruby
+        if: steps.env.outputs.is-self-hosted == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-ruby@main
+        with:
+          ruby-version: '3.5.5'
+
 #      - name: Toolchain Validation
 #        id: introspect
 #        if: steps.env.outputs.is-self-hosted == 'true'
