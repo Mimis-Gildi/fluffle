@@ -4,7 +4,7 @@ readonly floor_sdkman="$1"
 readonly floor_native="$2"
 
 [[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
-sdk_output=$(sdk version 2>/dev/null) || exit 0
+sdk_output=$(sdk version 2>/dev/null)
 
 readonly actual_sdkman=$(echo "$sdk_output" | awk '/^script:/ { print $2 }')
 readonly actual_native=$(echo "$sdk_output" | awk '/^native:/ { print $2 }')
@@ -16,6 +16,5 @@ if behind "$floor_sdkman" "$actual_sdkman" || behind "$floor_native" "$actual_na
     "$actual_sdkman" "$floor_sdkman" "$actual_native" "$floor_native"
   echo "failed=true" >> "$GITHUB_OUTPUT"
 else
-  printf '::warning title=SDKMAN Okay::sdkman %s, native %s.\n' "$actual_sdkman""$actual_native"
-  echo "failed=false" >> "$GITHUB_OUTPUT"
+  printf '::notice title=SDKMAN Okay::sdkman %s, native %s.\n' "$actual_sdkman""$actual_native"
 fi
