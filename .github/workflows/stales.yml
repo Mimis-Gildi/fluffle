@@ -3,7 +3,7 @@ run-name: "Stale Labeling ${{ github.repository }} by ${{ github.actor }} with $
 
 on:
   schedule:
-    - cron: '20 10 * * 1'
+    - cron: '20 10 * * *'
   workflow_dispatch:
   workflow_call:
 
@@ -52,3 +52,7 @@ jobs:
           close-pr-label: stale-pr-closed
           close-pr-message: |
             Closing this pull request after 15 additional days of inactivity.
+
+          delete-branch: true
+          exempt-issue-labels: keep
+          exempt-pr-labels: keep
