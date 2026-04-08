@@ -234,11 +234,7 @@ jobs:
           {
             echo "## Version Increment Summary"
             echo ""
-            echo "| Field | Value |"
-            echo "|-------|-------|"
-            echo "| Type | $TYPE |"
-            echo "| Branch | ${GITHUB_REF#refs/heads/} |"
-            echo "| Patch | ${{ needs.increment-running.outputs.old }} -> ${{ needs.increment-running.outputs.new }} |"
-            echo "| Minor | ${{ needs.increment-minor.outputs.old }} -> ${{ needs.increment-minor.outputs.new }} |"
-            echo "| Major | ${{ needs.increment-major.outputs.old }} -> ${{ needs.increment-major.outputs.new }} |"
+            echo "| Type | Version | Branch |"
+            echo "|------|---------|--------|"
+            echo "| $TYPE | ${{ needs.increment-running.outputs.old }}${{ needs.increment-minor.outputs.old }}${{ needs.increment-major.outputs.old }} -> ${{ needs.increment-running.outputs.new }}${{ needs.increment-minor.outputs.new }}${{ needs.increment-major.outputs.new }} | ${GITHUB_REF#refs/heads/} |"
           } >> $GITHUB_STEP_SUMMARY
