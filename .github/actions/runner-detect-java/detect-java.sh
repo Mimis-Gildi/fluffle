@@ -2,6 +2,8 @@
 
 export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
+
+sdk current
 sdk version
 
 sdk update

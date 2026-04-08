@@ -5,8 +5,9 @@ echo "upgraded=false" > "$GITHUB_OUTPUT"
 
 export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
-sdk version
 
+sdk current
+sdk version
 sdk update
 
 readonly actual=$(sdk current java 2>/dev/null  | awk '{ print $NF }') || exit 0

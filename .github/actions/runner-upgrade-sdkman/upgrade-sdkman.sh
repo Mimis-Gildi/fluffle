@@ -4,6 +4,8 @@ echo -e "## SDKMan Upgrade\n" >> $GITHUB_STEP_SUMMARY
 
 export RUST_BACKTRACE=1
 source "$SDKMAN_INIT"
+
+sdk current
 sdk version
 
 sdk selfupdate 2>/dev/null || {
