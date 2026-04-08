@@ -106,21 +106,28 @@ jobs:
         if: steps.java.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-java@main
 
-#      - name: Toolchain Validation
-#        id: introspect
-#        if: steps.env.outputs.is-self-hosted == 'true'
-#        timeout-minutes: 7
-#        uses: Mimis-Gildi/fluffle/.github/actions/introspect-runner@main
-#        with:
-#          validate-sdks: true
-#          mandatory-tools: "java,gradle,kotlin,"
-#          java-version: '21.0.9-tem'
-#          gradle-version: '9.2.0'
-#          kotlin-version: '2.2.21'
-#          kobweb-version: '0.9.21'
-#          maven-version: '3.9.11'
-#          sbt-version: '1.11.7'
-#          scala-version: '3.7.3'
+
+  sdk-candidates:
+    needs: canary-flight-job
+    runs-on: [self-hosted, peep]
+    timeout-minutes: 7
+    strategy:
+      matrix:
+        candidate: [gradle, kotlin, kobweb, maven, sbt, scala]
+    steps:
+
+      - name: Detect ${{ matrix.candidate }}
+        id: detect
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-sdk-candidate@main
+        with:
+          candidate: ${{ matrix.candidate }}
+
+      - name: Upgrade ${{ matrix.candidate }}
+        if: steps.detect.outputs.failed == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-sdk-candidate@main
+        with:
+          candidate: ${{ matrix.candidate }}
+
 
 #      - name: Toolchain Validation Report
 #        if: always()

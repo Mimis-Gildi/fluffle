@@ -1,0 +1,25 @@
+name: "Upgrade SDK Candidate"
+description: "Upgrades an SDKMAN candidate to latest and cleans old versions."
+author: "rdd13r"
+branding:
+  icon: "upload-cloud"
+  color: "green"
+
+inputs:
+  candidate:
+    description: "SDKMAN candidate name (e.g. gradle, kotlin, scala)"
+    required: true
+
+outputs:
+  upgraded:
+    description: "true if candidate was upgraded"
+    value: ${{ steps.upgrade.outputs.upgraded }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: upgrade
+      shell: zsh -l {0}
+      run: ${{ github.action_path }}/upgrade-sdk-candidate.sh ${{ inputs.candidate }}
