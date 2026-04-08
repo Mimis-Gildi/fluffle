@@ -82,6 +82,7 @@ jobs:
           python-version: '3.12.13'
 
       - name: Upgrade Conda
+        id: conda-upgrade
         if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 
@@ -99,6 +100,11 @@ jobs:
         id: java
         if: steps.env.outputs.is-self-hosted == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-java@main
+
+      - name: Upgrade Java
+        id: java-upgrade
+        if: steps.java.outputs.failed == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-java@main
 
 #      - name: Toolchain Validation
 #        id: introspect
