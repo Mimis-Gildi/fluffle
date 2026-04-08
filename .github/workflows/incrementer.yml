@@ -81,7 +81,7 @@ jobs:
           [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && echo "type=minor" > $GITHUB_OUTPUT
           [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && echo "type=major" > $GITHUB_OUTPUT
 
-          [[ "${LAST_MSG:l}" == *"[skip ci]"* || "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && echo "type=skip" > $GITHUB_OUTPUT
+          [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && echo "type=skip" > $GITHUB_OUTPUT
 
           printf '::notice title=Increment Type::%s\n' "$(grep type= $GITHUB_OUTPUT | cut -d= -f2)"
 
