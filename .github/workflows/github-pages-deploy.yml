@@ -24,7 +24,7 @@ defaults:
 jobs:
 
   build-site:
-    uses: ./.github/workflows/github-pages-jekyll-build.yml
+    uses: ./.github/workflows/pages-build.yml
     secrets: inherit
     permissions:
       contents: read

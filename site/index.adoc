@@ -1,0 +1,8 @@
+---
+layout: home
+title: "Fluffle"
+---
+
+Welcome to Fluffle -- shared ops for Mímis Gildi.
+
+Reusable GitHub Actions, workflow templates, runner infrastructure, and project scaffolding templates.

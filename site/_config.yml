@@ -1,0 +1,72 @@
+remote_theme: mmistakes/minimal-mistakes
+minimal_mistakes_skin: dark
+
+title: "Fluffle"
+subtitle: "Shared Ops for Mimis Gildi"
+description: "Reusable GitHub Actions, workflow templates, runner infrastructure, and project scaffolding."
+url: "https://mimis-gildi.github.io"
+baseurl: "/fluffle"
+repository: "Mimis-Gildi/fluffle"
+
+locale: "en-US"
+encoding: "utf-8"
+
+search: true
+search_full_content: true
+search_provider: lunr
+lunr:
+  search_within_pages: true
+
+plugins:
+  - jekyll-asciidoc
+  - jekyll-feed
+  - jekyll-remote-theme
+  - jekyll-include-cache
+  - jekyll-sitemap
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: single
+      author_profile: true
+      read_time: true
+      share: false
+      related: true
+  - scope:
+      path: "_pages"
+      type: pages
+    values:
+      layout: single
+      author_profile: true
+
+author:
+  name: "Mimis Gildi"
+  bio: "The tree grows."
+  links:
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/Mimis-Gildi/fluffle"
+
+footer:
+  links:
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/Mimis-Gildi/fluffle"
+    - label: "Mimis Gildi"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/Mimis-Gildi"
+
+sass:
+  quiet_deps: true
+
+include:
+  - _pages
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - CLAUDE.md
+  - "*.swp"
+  - ".jekyll-cache"
