@@ -16,5 +16,3 @@ if [[ "$actual" != "$latest" ]]; then
   printf '::warning title=Java outdated::active %s, latest 21-tem is %s\n' "$actual" "$latest"
   echo "failed=true" > "$GITHUB_OUTPUT"
 fi
-
-echo "failed=true" > "$GITHUB_OUTPUT"
