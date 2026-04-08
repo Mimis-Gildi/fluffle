@@ -29,7 +29,7 @@ runs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        echo "::notice title=Git Identity::✅ Configured git identity for commit"
+        echo "::notice title=Git Identity::Configured git identity for commit"
         
         
     - name: 🛠️ Ensure Branch Checkout
