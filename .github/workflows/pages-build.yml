@@ -48,5 +48,5 @@ jobs:
       - name: 📤 Upload site artifact
         uses: actions/upload-pages-artifact@v4.0.0
         timeout-minutes: 3
-#        with:
-#          path: _site
+        with:
+          path: site/_site/
