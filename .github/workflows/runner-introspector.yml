@@ -95,6 +95,10 @@ jobs:
           bundler-version: '2.7.2'
 
 
+      - name: Introspect Java
+        id: java
+        if: steps.env.outputs.is-self-hosted == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-java@main
 
 #      - name: Toolchain Validation
 #        id: introspect
@@ -111,12 +115,6 @@ jobs:
 #          maven-version: '3.9.11'
 #          sbt-version: '1.11.7'
 #          scala-version: '3.7.3'
-#          ruby-version: '3.3.5'
-#          gems-version: '3.5.16'
-#          bundler-version: '2.7.2'
-#          conda-version: '25.9.1'
-#          mamba-version: '2.3.3'
-#          python-version: '3.12.12'
 
 #      - name: Toolchain Validation Report
 #        if: always()
