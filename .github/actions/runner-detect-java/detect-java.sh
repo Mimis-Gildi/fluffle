@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
+source "$SDKMAN_INIT"
 
 sdk update
 sdk flush tmp

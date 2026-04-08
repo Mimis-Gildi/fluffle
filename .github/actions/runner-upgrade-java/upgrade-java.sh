@@ -3,7 +3,7 @@
 echo -e "## Upgrade Java\n" >> $GITHUB_STEP_SUMMARY
 
 echo "upgraded=false" > "$GITHUB_OUTPUT"
-[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
+source "$SDKMAN_INIT"
 
 sdk update
 
