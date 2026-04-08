@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 
+echo -e "## Conda Upgrade\n" >> $GITHUB_STEP_SUMMARY
 echo "upgraded=false" > "$GITHUB_OUTPUT"
 
 # >>> conda initialize >>>
@@ -40,5 +41,9 @@ conda activate ml
 conda upgrade -y python
 conda upgrade -y --all
 conda clean -y -a
+
+python --version 2>/dev/null >> $GITHUB_STEP_SUMMARY
+conda info 2>/dev/null >> $GITHUB_STEP_SUMMARY
+mamba info 2>/dev/null >> $GITHUB_STEP_SUMMARY
 
 echo "upgraded=true" > "$GITHUB_OUTPUT"

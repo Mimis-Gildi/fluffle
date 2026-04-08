@@ -12,9 +12,10 @@ readonly actual_native=$(echo "$sdk_output" | awk '/^native:/ { print $2 }')
 behind() { [[ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -n1)" != "$1" ]] }
 
 if behind "$floor_sdkman" "$actual_sdkman" || behind "$floor_native" "$actual_native"; then
-  printf '::warning title=SDKMAN behind floor::sdkman %s (floor %s), native %s (floor %s)\n' \
+  printf '::warning title=SDKMAN is behind::sdkman %s (floor %s), native %s (floor %s)\n' \
     "$actual_sdkman" "$floor_sdkman" "$actual_native" "$floor_native"
   echo "failed=true" >> "$GITHUB_OUTPUT"
 else
+  printf '::warning title=SDKMAN Okay::sdkman %s, native %s.\n' "$actual_sdkman""$actual_native"
   echo "failed=false" >> "$GITHUB_OUTPUT"
 fi

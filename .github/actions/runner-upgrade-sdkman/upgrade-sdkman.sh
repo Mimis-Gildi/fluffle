@@ -1,7 +1,13 @@
 #!/usr/bin/env zsh
 
-[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
-sdk selfupdate force 2>/dev/null || { echo "upgraded=false" >> "$GITHUB_OUTPUT"; exit 0 }
+echo -e "## SDKMan Upgrade\n" >> $GITHUB_STEP_SUMMARY
 
-printf '::notice title=SDKMAN upgraded::selfupdate complete\n'
+[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"
+sdk selfupdate 2>/dev/null || {
+  echo "upgraded=false" >> "$GITHUB_OUTPUT";
+  echo "SDKMan is NOT self-updated." >> $GITHUB_STEP_SUMMARY
+  exit 0 }
+
+printf '::notice title=SDKMAN upgraded::selfupdate is completed.\n'
+sdk version 2>/dev/null >> $GITHUB_STEP_SUMMARY
 echo "upgraded=true" >> "$GITHUB_OUTPUT"

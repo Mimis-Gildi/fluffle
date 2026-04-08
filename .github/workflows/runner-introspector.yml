@@ -71,7 +71,6 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-sdkman@main
 
 
-
       - name: Introspect Conda
         id: conda
         if: steps.env.outputs.is-self-hosted == 'true'
@@ -85,6 +84,7 @@ jobs:
         id: conda-upgrade
         if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
+
 
       - name: Introspect Ruby
         id: ruby
