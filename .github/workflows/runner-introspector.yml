@@ -59,6 +59,11 @@ jobs:
     needs: canary-flight-job
     runs-on: [ self-hosted, peep ]
     timeout-minutes: 11
+    outputs:
+      sdkman-failed: ${{ steps.sdkman.outputs.failed }}
+      sdkman-upgraded: ${{ steps.sdkman-upgrade.outputs.upgraded }}
+      conda-failed: ${{ steps.conda.outputs.failed }}
+      conda-upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
 
     steps:
 
@@ -92,6 +97,8 @@ jobs:
     needs: canary-flight-job
     runs-on: [ self-hosted, peep ]
     timeout-minutes: 2
+    outputs:
+      failed: ${{ steps.ruby.outputs.failed }}
 
     steps:
       - name: Introspect Ruby
@@ -107,6 +114,9 @@ jobs:
     needs: sdk-managers-job
     runs-on: [ self-hosted, peep ]
     timeout-minutes: 5
+    outputs:
+      failed: ${{ steps.java.outputs.failed }}
+      upgraded: ${{ steps.java-upgrade.outputs.upgraded }}
 
     steps:
 
@@ -143,25 +153,24 @@ jobs:
           candidate: ${{ matrix.candidate }}
 
 
-#      - name: Toolchain Validation Report
-#        if: always()
-#        run: |
-#          echo "::group::Toolchain Validation Report"
-#
-#          if [[ "${{ steps.introspect.outputs.sdkman-matches }}" == "false" ]]; then
-#            echo "::warning title=SDKMAN Version Mismatch::Expected script (0.5.19 vs. ${{ steps.introspect.outputs.sdkman-version }}), native (0.7.4 vs. ${{ steps.introspect.outputs.sdkman-native }}"
-#          fi
-#
-#          if [[ "${{ steps.introspect.outputs.sdks-have-missing }}" == "true" ]]; then
-#            echo "::warning title=Missing SDKs::These SDKs are missing: ${{ steps.introspect.outputs.missing-sdks }}"
-#          fi
-#
-#          if [[ -n "${{ steps.introspect.outputs.added-sdks }}" ]]; then
-#            echo "::notice title=Extra SDKs Installed::These SDKs are extra: ${{ steps.introspect.outputs.added-sdks }}"
-#          fi
-#
-#          if [[ -n "${{ steps.introspect.outputs.mismatched-sdks }}" ]]; then
-#            echo "::error title=Mismatched SDKs::These SDKs are in wrong versions: ${{ steps.introspect.outputs.mismatched-sdks }}"
-#          fi
-#
-#          echo "::endgroup::"
+  summary:
+    needs: [sdk-managers-job, ruby-job, java-manager-job, sdk-candidates]
+    if: always()
+    runs-on: [self-hosted, peep]
+    timeout-minutes: 1
+
+    steps:
+
+      - name: Runner Toolchain Summary
+        run: |
+          {
+            echo "## War Canary Summary"
+            echo ""
+            echo "| Component | Status | Action |"
+            echo "|-----------|--------|--------|"
+            echo "| SDKMAN | ${{ needs.sdk-managers-job.outputs.sdkman-failed == 'true' && 'X' || '' }} | ${{ needs.sdk-managers-job.outputs.sdkman-upgraded == 'true' && 'upgraded' || '' }} |"
+            echo "| Conda | ${{ needs.sdk-managers-job.outputs.conda-failed == 'true' && 'X' || '' }} | ${{ needs.sdk-managers-job.outputs.conda-upgraded == 'true' && 'upgraded' || '' }} |"
+            echo "| Ruby | ${{ needs.ruby-job.outputs.failed == 'true' && 'X' || '' }} | |"
+            echo "| Java | ${{ needs.java-manager-job.outputs.failed == 'true' && 'X' || '' }} | ${{ needs.java-manager-job.outputs.upgraded == 'true' && 'upgraded' || '' }} |"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
