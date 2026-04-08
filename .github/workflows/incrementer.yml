@@ -4,7 +4,6 @@ run-name: "Incremented Version on ${{ github.repository }} by ${{ github.actor }
 on:
   push:
     branches-ignore:
-      - main
       - release
       - 'releases/**'
       - 'renovate/**'
@@ -19,15 +18,8 @@ on:
       - 'renovate/**'
       - 'dependabot/**'
     types:
-      - assigned
-      - unassigned
-      - converted_to_draft
-      - edited
-      - labeled
-      - unlabeled
       - opened
       - reopened
-      - synchronize
   workflow_dispatch:
     inputs:
       force-major:
