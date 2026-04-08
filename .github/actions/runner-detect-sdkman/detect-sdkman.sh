@@ -16,5 +16,5 @@ if behind "$floor_sdkman" "$actual_sdkman" || behind "$floor_native" "$actual_na
     "$actual_sdkman" "$floor_sdkman" "$actual_native" "$floor_native"
   echo "failed=true" >> "$GITHUB_OUTPUT"
 else
-  printf '::notice title=SDKMAN Okay::sdkman %s, native %s.\n' "$actual_sdkman""$actual_native"
+  printf '::notice title=SDKMAN Okay::sdkman %s, native %s.\n' "$actual_sdkman" "$actual_native"
 fi
