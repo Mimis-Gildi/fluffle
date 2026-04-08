@@ -28,31 +28,27 @@ jobs:
 
       - name: "Run Stale Issues and Pull Requests checks in repository [${{ github.repository }}] by ${{ github.actor }}"
         id: stale-issues-and-pull-requests-check
-        uses: actions/stale@v10.1.0
+        uses: actions/stale@v10.2.0
         continue-on-error: true
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          operations-per-run: 50
-          enable-statistics: true
+          operations-per-run: 200
 
-          days-before-issue-stale: 30
+          days-before-issue-stale: 70
           stale-issue-label: stale-issue
           stale-issue-message: |
-            This issue has had no activity for 30 days and is being marked stale.
-            If this issue is still relevant, please update or comment.
+            This issue has had no activity for 70 days and is being marked stale.
 
-          days-before-issue-close: 15
+          days-before-issue-close: 45
           close-issue-label: stale-issue-closed
           close-issue-message: |
-            Closing this issue after 15 additional days of inactivity.
+            Closing this issue after 45 additional days of inactivity.
 
-          days-before-pr-stale: 21
+          days-before-pr-stale: 11
           stale-pr-label: stale-pr
           stale-pr-message: |
-            This pull request has been inactive for 21 days and is being marked stale.
-            Please update or comment if still relevant.
+            This pull request has been inactive for 11 days and is being marked stale.
 
-          days-before-pr-close: 14
+          days-before-pr-close: 15
           close-pr-label: stale-pr-closed
           close-pr-message: |
-            Closing this pull request after 14 additional days of inactivity.
+            Closing this pull request after 15 additional days of inactivity.
