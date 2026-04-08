@@ -101,6 +101,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Calculate version
         id: version-patch
@@ -141,6 +143,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Calculate version
         id: version-minor
