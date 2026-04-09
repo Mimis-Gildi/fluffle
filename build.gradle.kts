@@ -13,7 +13,7 @@ allprojects {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(useJavaVersion))
-        vendor.set(JvmVendorSpec.ADOPTIUM)
+//        vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 }
 
