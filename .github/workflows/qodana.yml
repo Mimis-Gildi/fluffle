@@ -1,24 +1,22 @@
-name: Security Scan by Qodana
-run-name: "Executed Security Scan by Qodana on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
-#.github/workflows/security-scan-by-qodana.yml
-#.github/qodana.yaml
+name: Qodana
+run-name: "Qodana scan on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
 
 on:
-#  push:
-#    branches:
-#      - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
   workflow_call:
   pull_request:
     types:
       - opened
       - reopened
-      - closed
+      - synchronize
   schedule:
     - cron: '19 15 3 * *'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   checks: write
 
@@ -37,15 +35,14 @@ jobs:
         uses: actions/checkout@v6.0.2
         timeout-minutes: 3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
-
-      - name: Run Qodana Scan (PR-mode enabled)
+      - name: Run Qodana Scan
         uses: JetBrains/qodana-action@v2025.3.2
         timeout-minutes: 75
         with:
-          pr-mode: true
+          pr-mode: ${{ github.event_name == 'pull_request' }}
         env:
           QODANA_PROJECT_TOKEN: ${{ secrets.QODANA_PROJECT_TOKEN }}
           QODANA_TOKEN: ${{ secrets.QODANA_PROJECT_TOKEN }}
