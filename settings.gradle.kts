@@ -12,4 +12,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "fluffle"
+include("templates:kotlinApp")
+rootProject.name = "templates"

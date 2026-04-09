@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-# rdd13r 20241007
-
-curl -s "https://get.sdkman.io" | bash
