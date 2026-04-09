@@ -46,186 +46,84 @@ defaults:
 
 jobs:
 
-  initialize-versioning:
+  increment:
     runs-on: self-hosted
-    timeout-minutes: 3
-    outputs:
-      current: ${{ steps.memoize.outputs.current }}
-      type: ${{ steps.operation.outputs.type }}
-
+    timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write
+    outputs:
+      type: ${{ steps.operation.outputs.type }}
+      old: ${{ steps.version.outputs.old }}
+      new: ${{ steps.version.outputs.new }}
 
     steps:
 
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Store Current Version
-        id: memoize
-        run: |
-          readonly current=$(grep '^version=' gradle.properties | cut -d= -f2)
-          printf '::notice title=Current Version::%s\n' "$current"
-          echo "current=$current" >> $GITHUB_OUTPUT
-
-      - name: Calculate Type of Increment
+      - name: Determine increment type
         id: operation
         run: |
           LAST_MSG=$(git log -1 --format='%s')
           LAST_AUTHOR=$(git log -1 --format='%an')
-          
-          echo "type=patch" > $GITHUB_OUTPUT
-          [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && echo "type=minor" > $GITHUB_OUTPUT
-          [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && echo "type=major" > $GITHUB_OUTPUT
 
-          [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && echo "type=skip" > $GITHUB_OUTPUT
+          TYPE=patch
+          [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && TYPE=minor
+          [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && TYPE=major
+          [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && TYPE=skip
 
-          printf '::notice title=Increment Type::%s\n' "$(grep type= $GITHUB_OUTPUT | cut -d= -f2)"
+          printf '::notice title=Increment Type::%s\n' "$TYPE"
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
 
-
-  increment-running:
-    needs: initialize-versioning
-    if: needs.initialize-versioning.outputs.type == 'patch'
-    runs-on: self-hosted
-    timeout-minutes: 3
-    permissions:
-      contents: write
-    outputs:
-      old: ${{ steps.version-patch.outputs.old }}
-      new: ${{ steps.version-patch.outputs.new }}
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-
-      - name: Calculate version
-        id: version-patch
+      - name: Calculate and apply version
+        id: version
+        if: steps.operation.outputs.type != 'skip'
         run: |
-          VERSION="${{ needs.initialize-versioning.outputs.current }}"
+          TYPE="${{ steps.operation.outputs.type }}"
+          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
           MAJOR=$(echo "$VERSION" | cut -d. -f1)
           MINOR=$(echo "$VERSION" | cut -d. -f2)
           PATCH=$(echo "$VERSION" | cut -d. -f3)
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+          if [[ "$TYPE" == "major" ]]; then
+            MAX=$(git log --all --format='%H' | while read sha; do
+              git show "${sha}:gradle.properties" 2>/dev/null | grep '^version=' | cut -d= -f2
+            done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+            [[ -n "$MAX" ]] || { echo "::error title=No Versions::No valid version found in history"; exit 1 }
+            MAJOR=$(echo "$MAX" | cut -d. -f1)
+            printf '::notice title=Max Version Ever::%s\n' "$MAX"
+          fi
+
+          case "$TYPE" in
+            patch) NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+            minor) NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+            major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
+          esac
 
           grep -q "^version=$VERSION$" gradle.properties || { echo "::error title=Version Mismatch::Expected version=$VERSION not found"; exit 1 }
           sed -i "s/^version=$VERSION$/version=$NEW_VERSION/" gradle.properties
-          printf '::notice title=Patch Bump::%s -> %s\n' "$VERSION" "$NEW_VERSION"
+          printf '::notice title=%s Bump::%s -> %s\n' "${(C)TYPE}" "$VERSION" "$NEW_VERSION"
 
           echo "old=$VERSION" >> $GITHUB_OUTPUT
           echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit and push
-        timeout-minutes: 2
-        uses: Mimis-Gildi/fluffle/.github/actions/commit-and-push-files@main
-        with:
-          files: gradle.properties
-          message: "Patch ${{ steps.version-patch.outputs.old }} -> ${{ steps.version-patch.outputs.new }}"
-
-
-  increment-minor:
-    needs: initialize-versioning
-    if: needs.initialize-versioning.outputs.type == 'minor'
-    runs-on: self-hosted
-    timeout-minutes: 3
-    permissions:
-      contents: write
-    outputs:
-      old: ${{ steps.version-minor.outputs.old }}
-      new: ${{ steps.version-minor.outputs.new }}
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-
-      - name: Calculate version
-        id: version-minor
+        if: steps.version.outputs.new != ''
         run: |
-          VERSION="${{ needs.initialize-versioning.outputs.current }}"
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          MINOR=$(echo "$VERSION" | cut -d. -f2)
-          NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradle.properties
+          git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }}"
+          git push origin HEAD
 
-          grep -q "^version=$VERSION$" gradle.properties || { echo "::error title=Version Mismatch::Expected version=$VERSION not found"; exit 1 }
-          sed -i "s/^version=$VERSION$/version=$NEW_VERSION/" gradle.properties
-          printf '::notice title=Minor Bump::%s -> %s\n' "$VERSION" "$NEW_VERSION"
-
-          echo "old=$VERSION" >> $GITHUB_OUTPUT
-          echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Commit and push
-        timeout-minutes: 2
-        uses: Mimis-Gildi/fluffle/.github/actions/commit-and-push-files@main
-        with:
-          files: gradle.properties
-          message: "Minor ${{ steps.version-minor.outputs.old }} -> ${{ steps.version-minor.outputs.new }}"
-
-
-  increment-major:
-    needs: initialize-versioning
-    if: needs.initialize-versioning.outputs.type == 'major'
-    runs-on: self-hosted
-    timeout-minutes: 3
-    permissions:
-      contents: write
-    outputs:
-      old: ${{ steps.version-major.outputs.old }}
-      new: ${{ steps.version-major.outputs.new }}
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Find highest version ever used
-        id: max
-        run: |
-          MAX=$(git log --all --format='%H' | while read sha; do
-            git show "${sha}:gradle.properties" 2>/dev/null | grep '^version=' | cut -d= -f2
-          done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
-
-          [[ -n "$MAX" ]] || { echo "::error title=No Versions::No valid version found in history"; exit 1 }
-          printf '::notice title=Max Version Ever::%s\n' "$MAX"
-          echo "max=$MAX" >> $GITHUB_OUTPUT
-
-      - name: Calculate version
-        id: version-major
-        run: |
-          VERSION="${{ needs.initialize-versioning.outputs.current }}"
-          MAJOR=$(echo "${{ steps.max.outputs.max }}" | cut -d. -f1)
-          NEW_VERSION="$((MAJOR + 1)).0.0"
-
-          grep -q "^version=$VERSION$" gradle.properties || { echo "::error title=Version Mismatch::Expected version=$VERSION not found"; exit 1 }
-          sed -i "s/^version=$VERSION$/version=$NEW_VERSION/" gradle.properties
-          printf '::notice title=Major Bump::%s -> %s (max was %s)\n' "$VERSION" "$NEW_VERSION" "${{ steps.max.outputs.max }}"
-
-          echo "old=$VERSION" >> $GITHUB_OUTPUT
-          echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Commit and push
-        timeout-minutes: 2
-        uses: Mimis-Gildi/fluffle/.github/actions/commit-and-push-files@main
-        with:
-          files: gradle.properties
-          message: "Major ${{ steps.version-major.outputs.old }} -> ${{ steps.version-major.outputs.new }}"
-
-  summarize-increment:
-    needs: [initialize-versioning, increment-running, increment-minor, increment-major]
+  summarize:
+    needs: increment
     if: always()
     runs-on: self-hosted
     timeout-minutes: 1
@@ -234,13 +132,13 @@ jobs:
 
       - name: Summary
         run: |
-          TYPE="${{ needs.initialize-versioning.outputs.type }}"
+          TYPE="${{ needs.increment.outputs.type }}"
+          OLD="${{ needs.increment.outputs.old }}"
+          NEW="${{ needs.increment.outputs.new }}"
           {
             echo "## Version Increment Summary"
             echo ""
             echo "| Type | Version | Branch |"
             echo "|------|---------|--------|"
-            OLD="${{ needs.increment-running.outputs.old }}${{ needs.increment-minor.outputs.old }}${{ needs.increment-major.outputs.old }}"
-            NEW="${{ needs.increment-running.outputs.new }}${{ needs.increment-minor.outputs.new }}${{ needs.increment-major.outputs.new }}"
-            [[ -n "$NEW" ]] && echo "| $TYPE | $OLD -> $NEW | ${GITHUB_REF#refs/heads/} |" || echo "| $TYPE | ${{ needs.initialize-versioning.outputs.current }} (unchanged) | ${GITHUB_REF#refs/heads/} |"
+            [[ -n "$NEW" ]] && echo "| $TYPE | $OLD -> $NEW | ${GITHUB_REF#refs/heads/} |" || echo "| $TYPE | unchanged | ${GITHUB_REF#refs/heads/} |"
           } >> $GITHUB_STEP_SUMMARY
