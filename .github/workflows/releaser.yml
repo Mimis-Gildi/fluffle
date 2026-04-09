@@ -1,0 +1,98 @@
+name: Publish Release
+run-name: "Published on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  workflow_dispatch:
+  workflow_call:
+
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: zsh -l {0}
+
+jobs:
+
+  release-publish:
+    name: "Publish Release Artifacts"
+    runs-on: [self-hosted, release]
+    timeout-minutes: 7
+    if: github.head_ref == '' || (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'dependabot/'))
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+
+      - name: Extract version
+        id: version-info
+        run: |
+          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version-info.outputs.version }}"
+          BODY=$(awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]")) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          if [[ -z "${BODY// /}" ]]; then
+            echo "::error title=Release Blocked::No changelog entry for v$VERSION. Update CHANGELOG.md before releasing."
+            exit 1
+          fi
+
+          {
+            echo 'body<<EOF_CHANGELOG'
+            echo "$BODY"
+            echo 'EOF_CHANGELOG'
+          } >> $GITHUB_OUTPUT
+
+
+
+      - name: Build Artifacts
+        id: gradle-build
+        timeout-minutes: 9
+        run: |
+          echo "Placeholder for the build actions with a conditional check."
+
+
+      - name: 🏷️ Create annotated tag if not already present
+        id: tag-create
+        uses: ./.github/actions/create-annotated-git-tag-if-not-exists
+        timeout-minutes: 3
+        with:
+          tag: ${{ steps.version-info.outputs.tag }}
+          message: >
+            Release ${{ steps.version-info.outputs.tag }}
+      
+
+      - name: 🚀 Publish GitHub Release with Artifacts
+        uses: ncipollo/release-action@v1.20.0
+        timeout-minutes: 11
+        with:
+          tag: ${{ steps.version-info.outputs.tag }}
+          name: "Release Bundle ${{ steps.version-info.outputs.tag }}"
+          body: ${{ steps.changelog.outputs.body }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          artifacts: build/docs/asciidocPdf/*.pdf
+          allowUpdates: true
