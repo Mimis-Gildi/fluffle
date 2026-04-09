@@ -1,6 +1,6 @@
-# 📄 Pull Request: Documentation
+# Pull Request: Documentation
 
-## ✅ Doc Summary
+## Doc Summary
 - **Title:** 
 - **Files:** 
 - **Doc Type:** 
@@ -9,12 +9,12 @@
   - [ ] Migration
 - **Owner:** 
 
-## 📌 Context Links
+## Context Links
 - Source Spec / ADR: 
 - Related Issues / PRs: 
 - Preview Link: 
 
-## 🚦 Review Checklist
+## Review Checklist
 - [ ] Structure consistent with style guide
 - [ ] Terminology & examples accurate
 - [ ] Images/assets optimized
@@ -22,7 +22,7 @@
 - [ ] Front matter / attributes set
 - [ ] File naming per convention
 
-## 🏷️ Tags
+## Tags
 
 ```yaml
 changelog:

@@ -1,0 +1,29 @@
+name: "Detect SDKMAN"
+description: "Detects SDKMAN presence and validates script and native versions against floor thresholds. Skips on non-Linux."
+author: "rdd13r"
+branding:
+  icon: "search"
+  color: "orange"
+
+inputs:
+  sdkman-version:
+    description: "Minimum expected SDKMAN script version"
+    required: true
+  sdkman-native:
+    description: "Minimum expected SDKMAN native daemon version"
+    required: true
+
+outputs:
+  failed:
+    description: "Expectations met"
+    value: ${{ steps.detect.outputs.failed }}
+
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: detect
+      shell: zsh -l {0}
+      run: ${{ github.action_path }}/detect-sdkman.sh ${{ inputs.sdkman-version }} ${{ inputs.sdkman-native }}

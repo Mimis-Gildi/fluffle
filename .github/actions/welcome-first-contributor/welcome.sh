@@ -43,7 +43,7 @@ if [[ "$greeting" == "false" ]]; then
   exit 0
 fi
 
-if [[ "$testing" != "true" ]] && (( prior > 0 )); then
+if [[ "$testing" != "true" ]] && (( prior > 1 )); then
   printf '::notice title=Oldtimer::%s has %i %ss raised.\n' "$sender" "$prior" "$kind"
   exit 0
 fi

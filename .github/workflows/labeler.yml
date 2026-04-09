@@ -1,0 +1,58 @@
+name: Label Pull Request
+run-name: "Labeled Pull Request examining content on ${{ github.actor }} with ${{ github.event_name }}"
+#.github/workflows/labeler.yml
+# https://github.com/actions/labeler
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-labeler"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: zsh -l {0}
+
+jobs:
+
+  label-pull-request-iaw-labeling-guidelines:
+    timeout-minutes: 2
+    runs-on: self-hosted
+    name: "Label Pull Request with IAW Labeling Guidelines examining content"
+
+    steps:
+
+      - name: "Checkout to check for labeler config"
+        uses: actions/checkout@v6.0.2
+        with:
+          sparse-checkout: .github/labeler.yml
+
+      - name: "Check for labeler configuration"
+        id: config-check
+        run: |
+          if [[ -f .github/labeler.yml ]]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "::notice title=Labeler::No .github/labeler.yml found. Skipping."
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Label Pull Request pushing labels to GitHub Pull Request"
+        if: steps.config-check.outputs.found == 'true'
+        uses: actions/labeler@v6.0.1
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"

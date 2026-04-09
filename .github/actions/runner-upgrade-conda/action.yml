@@ -1,0 +1,20 @@
+name: "Upgrade Conda"
+description: "Runs ML Environment upgrade"
+author: "rdd13r"
+branding:
+  icon: "upload-cloud"
+  color: "orange"
+
+outputs:
+  upgraded:
+    description: "true if selfupdate was executed"
+    value: ${{ steps.upgrade.outputs.upgraded }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: upgrade
+      shell: zsh -l {0}
+      run: ${{ github.action_path }}/upgrade-conda.sh

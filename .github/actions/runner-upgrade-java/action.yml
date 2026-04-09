@@ -1,0 +1,20 @@
+name: "Upgrade Java"
+description: "Upgrades Java 21-tem and 25-tem to latest via SDKMAN. Default stays 21."
+author: "rdd13r"
+branding:
+  icon: "coffee"
+  color: "orange"
+
+outputs:
+  upgraded:
+    description: "true if any java version was changed"
+    value: ${{ steps.upgrade.outputs.upgraded }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: upgrade
+      shell: zsh -l {0}
+      run: ${{ github.action_path }}/upgrade-java.sh

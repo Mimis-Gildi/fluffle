@@ -1,0 +1,53 @@
+name: Build Site
+run-name: "Jekyll built on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+on:
+  push:
+    branches:
+      - '[0-9]+-**'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-jekyll"
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: zsh -l {0}
+    working-directory: site
+
+
+jobs:
+
+  build-site:
+    runs-on: [ self-hosted, jekyll ]
+    timeout-minutes: 9
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: bundle install
+
+      - name: Build Jekyll site
+        timeout-minutes: 7
+        run: JEKYLL_ENV=production bundle exec jekyll build
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v4.0.0
+        timeout-minutes: 3
+        with:
+          path: site/_site/
+          retention-days: '2'

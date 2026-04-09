@@ -1,0 +1,127 @@
+name: Publish Release
+run-name: "Published on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  workflow_dispatch:
+    inputs:
+      build-tasks:
+        required: false
+        type: string
+        default: 'build'
+        description: 'Gradle tasks to run'
+      artifacts:
+        required: false
+        type: string
+        default: ''
+        description: 'Glob pattern for release artifacts to attach'
+  workflow_call:
+    inputs:
+      build-tasks:
+        required: false
+        type: string
+        default: 'build'
+      artifacts:
+        required: false
+        type: string
+        default: ''
+
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: zsh -l {0}
+
+jobs:
+
+  release-publish:
+    name: "Publish Release"
+    runs-on: [self-hosted, release]
+    timeout-minutes: 15
+    if: >-
+      github.event.pull_request.merged == true
+      || github.event_name != 'pull_request'
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Extract version
+        id: version-info
+        run: |
+          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version-info.outputs.version }}"
+          BODY=$(awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]")) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          if [[ -z "${BODY// /}" ]]; then
+            echo "::error title=Release Blocked::No changelog entry for v$VERSION. Update CHANGELOG.md before releasing."
+            exit 1
+          fi
+
+          {
+            echo 'body<<EOF_CHANGELOG'
+            echo "$BODY"
+            echo 'EOF_CHANGELOG'
+          } >> $GITHUB_OUTPUT
+
+      - name: Build
+        timeout-minutes: 9
+        run: |
+          source "$SDKMAN_INIT"
+          gradle ${{ inputs.build-tasks }}
+
+      - name: Create annotated tag if not already present
+        timeout-minutes: 3
+        run: |
+          TAG="${{ steps.version-info.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::warning title=Tag Exists::$TAG already exists. Skipping."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "::notice title=Tag Created:: Created and pushed $TAG"
+          fi
+
+      - name: Publish GitHub Release
+        timeout-minutes: 3
+        run: |
+          TAG="${{ steps.version-info.outputs.tag }}"
+          ARTIFACTS="${{ inputs.artifacts }}"
+          if gh release view "$TAG" &>/dev/null; then
+            echo "::warning title=Release Exists::$TAG already exists. Skipping."
+          else
+            ARGS=(--title "Release Bundle $TAG" --notes "${{ steps.changelog.outputs.body }}")
+            if [[ -n "$ARTIFACTS" ]]; then
+              gh release create "$TAG" "${ARGS[@]}" $~ARTIFACTS
+            else
+              gh release create "$TAG" "${ARGS[@]}"
+            fi
+            echo "::notice title=Released::Published $TAG"
+          fi

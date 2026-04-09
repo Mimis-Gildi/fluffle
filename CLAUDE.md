@@ -15,8 +15,8 @@ When actions drift in child repos, they get corrected here first, then ported ba
 
 | Directory                     | Purpose                                                   |
 |-------------------------------|-----------------------------------------------------------|
-| `.github/actions/`            | 13 shared composite GitHub Actions -- the primary product |
-| `.github/workflows/`          | 12 shared workflow templates                              |
+| `.github/actions/`            | Shared composite GitHub Actions (runner detect/upgrade, prune, welcome) |
+| `.github/workflows/`          | 10 shared workflow templates                              |
 | `templates-sdk/`              | SDKMAN-based project scaffolding                          |
 | `templates-gradle/`           | Gradle project template                                   |
 | `templates-scala/`            | Scala/sbt project template                                |
@@ -50,14 +50,10 @@ Same as all Mímis Gildi repos: linear history, feature branches merge to `main`
 
 ## Key Actions
 
-| Action                                   | Purpose                                        |
-|------------------------------------------|------------------------------------------------|
-| `introspect-runner`                      | Runner environment validation and provisioning |
-| `detect-runner-type`                     | Identify self-hosted vs GitHub-hosted          |
-| `feature-fail-fast`                      | Branch guard for workflow conditions           |
-| `extract-component-version-and-tag`      | Semantic versioning from gradle.properties     |
-| `create-annotated-git-tag-if-not-exists` | Idempotent tag creation                        |
-| `commit-and-push-files`                  | Automated commit for CI-generated changes      |
-| `check-pr-labels` / `check-issue-labels` | Label-based workflow gating                    |
-| `release-notes-*`                        | Release notes generation pipeline              |
-| `verify-release-notes-file-present`      | Release notes guard                            |
+| Action                        | Purpose                                          |
+|-------------------------------|--------------------------------------------------|
+| `runner-detect-*`             | Detect sdkman, java, conda, ruby, sdk-candidates |
+| `runner-upgrade-*`            | Upgrade sdkman, java, conda, sdk-candidates      |
+| `prune-workflow-runs`         | Prune old workflow runs                          |
+| `prune-workflow-caches`       | Prune stale GitHub Actions caches                |
+| `welcome-first-contributor`   | Greet first-time issue/PR authors                |
