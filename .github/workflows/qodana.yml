@@ -38,6 +38,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
+      - name: Bootstrap SDK
+        run: |
+          source "${SDKMAN_INIT}"
+          sdk c > $HITHUB_STEP_SUMMARY
+
       - name: Run Qodana Scan
         uses: JetBrains/qodana-action@v2025.3.2
         timeout-minutes: 75
