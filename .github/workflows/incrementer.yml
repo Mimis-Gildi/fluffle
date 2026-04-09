@@ -4,6 +4,7 @@ run-name: "Incremented Version on ${{ github.repository }} by ${{ github.actor }
 on:
   push:
     branches-ignore:
+      - main
       - release
       - 'releases/**'
       - 'renovate/**'
@@ -13,6 +14,7 @@ on:
       - '[0-9]+-**'
   pull_request:
     branches-ignore:
+      - main
       - release
       - 'releases/**'
       - 'renovate/**'

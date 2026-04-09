@@ -9,7 +9,27 @@ on:
     types:
       - closed
   workflow_dispatch:
+    inputs:
+      build-tasks:
+        required: false
+        type: string
+        default: 'build'
+        description: 'Gradle tasks to run'
+      artifacts:
+        required: false
+        type: string
+        default: ''
+        description: 'Glob pattern for release artifacts to attach'
   workflow_call:
+    inputs:
+      build-tasks:
+        required: false
+        type: string
+        default: 'build'
+      artifacts:
+        required: false
+        type: string
+        default: ''
 
 
 permissions:
@@ -22,10 +42,14 @@ defaults:
 jobs:
 
   release-publish:
-    name: "Publish Release Artifacts"
+    name: "Publish Release"
     runs-on: [self-hosted, release]
-    timeout-minutes: 7
-    if: github.head_ref == '' || (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'dependabot/'))
+    timeout-minutes: 15
+    if: >-
+      github.event.pull_request.merged == true
+      || github.event_name != 'pull_request'
+    env:
+      GH_TOKEN: ${{ github.token }}
 
     steps:
 
@@ -35,14 +59,12 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-
       - name: Extract version
         id: version-info
         run: |
           VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-
 
       - name: Extract changelog
         id: changelog
@@ -67,14 +89,11 @@ jobs:
             echo 'EOF_CHANGELOG'
           } >> $GITHUB_OUTPUT
 
-
-
-      - name: Build Artifacts
-        id: gradle-build
+      - name: Build
         timeout-minutes: 9
         run: |
-          echo "Placeholder for the build actions with a conditional check."
-
+          source "$SDKMAN_INIT"
+          gradle ${{ inputs.build-tasks }}
 
       - name: Create annotated tag if not already present
         timeout-minutes: 3
@@ -89,15 +108,20 @@ jobs:
             git push origin "$TAG"
             echo "::notice title=Tag Created:: Created and pushed $TAG"
           fi
-      
 
-      - name: Publish GitHub Release with Artifacts
-        uses: ncipollo/release-action@v1.20.0
-        timeout-minutes: 11
-        with:
-          tag: ${{ steps.version-info.outputs.tag }}
-          name: "Release Bundle ${{ steps.version-info.outputs.tag }}"
-          body: ${{ steps.changelog.outputs.body }}
-          prerelease: ${{ github.event.inputs.prerelease }}
-          artifacts: build/docs/asciidocPdf/*.pdf
-          allowUpdates: true
+      - name: Publish GitHub Release
+        timeout-minutes: 3
+        run: |
+          TAG="${{ steps.version-info.outputs.tag }}"
+          ARTIFACTS="${{ inputs.artifacts }}"
+          if gh release view "$TAG" &>/dev/null; then
+            echo "::warning title=Release Exists::$TAG already exists. Skipping."
+          else
+            ARGS=(--title "Release Bundle $TAG" --notes "${{ steps.changelog.outputs.body }}")
+            if [[ -n "$ARTIFACTS" ]]; then
+              gh release create "$TAG" "${ARGS[@]}" $~ARTIFACTS
+            else
+              gh release create "$TAG" "${ARGS[@]}"
+            fi
+            echo "::notice title=Released::Published $TAG"
+          fi
