@@ -39,7 +39,7 @@ jobs:
       - name: "Checkout to check for labeler config"
         uses: actions/checkout@v6.0.2
         with:
-          sparse-checkout: .github/labeler.yml
+          sparse-checkout: .github
 
       - name: "Check for labeler configuration"
         id: config-check

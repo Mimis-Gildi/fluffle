@@ -1,28 +1,20 @@
 val useJavaVersion: String by project
 
 plugins {
-    `kotlin-dsl`
+    alias(libs.plugins.kotlin.jvm)
+    application
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-    }
+repositories {
+    mavenCentral()
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(useJavaVersion))
-        vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 }
 
-dependencies {
-    implementation(gradleApi())
-    implementation(platform(kotlin("bom")))
+application {
+    mainClass.set("me.lugaru.vitr.fluffle.ClaudeKt")
 }
-
-tasks.named<Jar>("jar") {
-    enabled = false
-}
-
