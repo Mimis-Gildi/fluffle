@@ -36,7 +36,7 @@ runs:
       shell: zsh -l {0}
       run: |
         BRANCH="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD)}"
-        echo "::notice title=Target Branch::🔀 Switching to branch: $BRANCH"
+        echo "::notice title=Target Branch:: Switching to branch: $BRANCH"
         git fetch origin "$BRANCH"
         git checkout "$BRANCH"
         git reset --soft "origin/$BRANCH"
