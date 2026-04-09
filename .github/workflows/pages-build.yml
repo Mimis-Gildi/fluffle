@@ -34,18 +34,18 @@ jobs:
 
 
     steps:
-      - name: ⬇️ Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v6.0.2
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         timeout-minutes: 3
         run: bundle install
 
-      - name: 🛠️ Build Jekyll site
+      - name: Build Jekyll site
         timeout-minutes: 7
         run: JEKYLL_ENV=production bundle exec jekyll build
 
-      - name: 📤 Upload site artifact
+      - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4.0.0
         timeout-minutes: 3
         with:

@@ -76,17 +76,22 @@ jobs:
           echo "Placeholder for the build actions with a conditional check."
 
 
-      - name: 🏷️ Create annotated tag if not already present
-        id: tag-create
-        uses: ./.github/actions/create-annotated-git-tag-if-not-exists
+      - name: Create annotated tag if not already present
         timeout-minutes: 3
-        with:
-          tag: ${{ steps.version-info.outputs.tag }}
-          message: >
-            Release ${{ steps.version-info.outputs.tag }}
+        run: |
+          TAG="${{ steps.version-info.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::warning title=Tag Exists::$TAG already exists. Skipping."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "::notice title=Tag Created:: Created and pushed $TAG"
+          fi
       
 
-      - name: 🚀 Publish GitHub Release with Artifacts
+      - name: Publish GitHub Release with Artifacts
         uses: ncipollo/release-action@v1.20.0
         timeout-minutes: 11
         with:

@@ -1,18 +1,18 @@
-# 📄 Pull Request: Release Review
+# Pull Request: Release Review
 
-## ✅ Release Info
+## Release Info
 - **Version / Label:** 
 - **Date:** 
 - **Owner:** 
 - **Change Summary:** 
 
-## 📌 Context Links
+## Context Links
 - Changelog / Diff: 
 - Test Plan / Results: 
 - Rollback Steps: 
 - Monitoring Dashboard: 
 
-## 🚦 Gate Checklist
+## Gate Checklist
 - [ ] Tests green in CI
 - [ ] Security checks passed
 - [ ] Docs updated
@@ -20,7 +20,7 @@
 - [ ] Stakeholders sign-off
 - [ ] Post-release monitoring window set
 
-## 🏷️ Tags
+## Tags
 
 ```yaml
 changelog:

@@ -32,7 +32,7 @@ runs:
         echo "::notice title=Git Identity::Configured git identity for commit"
         
         
-    - name: 🛠️ Ensure Branch Checkout
+    - name: Ensure Branch Checkout
       shell: zsh -l {0}
       run: |
         BRANCH="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD)}"
@@ -43,7 +43,7 @@ runs:
         git status
 
 
-    - name: 📤 Commit and Push Files
+    - name: Commit and Push Files
       id: update
       shell: zsh -l {0}
       run: |
@@ -69,7 +69,7 @@ runs:
         
         BRANCH="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD)}"
         if output=$(git push origin "$BRANCH" --porcelain); then
-          echo "::notice title=Pushed Changes::➡️ Branch: $BRANCH :: $output"
+          echo "::notice title=Pushed Changes::Branch: $BRANCH :: $output"
           echo "pushed=true" >> $GITHUB_OUTPUT
         else
           echo "::error title=Git Push Failed::Push to $BRANCH failed. Investigate detached HEAD or permission issues."

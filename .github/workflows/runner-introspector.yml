@@ -33,7 +33,7 @@ jobs:
       - name: Hosted Infra Snapshot
         if: inputs.host-info
         run: |
-          echo "::group::🖥️ Hosted Infra Fingerprint"
+          echo "::group:: Hosted Infra Fingerprint"
           echo "::notice title=Event::$GITHUB_EVENT_NAME"
           echo "::notice title=Branch::$GITHUB_REF_NAME"
           echo "::notice title=OS:: $(cat /etc/issue || true)"
