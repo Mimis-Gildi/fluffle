@@ -44,6 +44,5 @@ jobs:
         with:
           pr-mode: ${{ github.event_name == 'pull_request' }}
         env:
-          QODANA_PROJECT_TOKEN: ${{ secrets.QODANA_PROJECT_TOKEN }}
-          QODANA_TOKEN: ${{ secrets.QODANA_PROJECT_TOKEN }}
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_695194621 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
