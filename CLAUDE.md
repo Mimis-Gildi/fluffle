@@ -50,10 +50,6 @@ These are separate contracts.
 gradle clean build test
 ```
 
-## Trunk-Based Development
-
-Same as all Mímis Gildi repos: linear history, feature branches merge to `main`.
-
 ## Key Actions
 
 | Action                        | Purpose                                          |
