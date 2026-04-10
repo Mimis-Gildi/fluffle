@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code when working with code in this repository.
 
+## MANDATORY: Team Norms
+
+@TEAM_NORMS.md
+
+These rules are non-negotiable. They are loaded automatically every session.
+
 ## What This Is
 
 **Fluffle** is the shared ops repo for multiple orgs (Mímis Gildi, Gervi Héra Vitr, and others).
@@ -13,16 +19,16 @@ When actions drift in child repos, they get corrected here first, then ported ba
 
 ## Repository Structure
 
-| Directory                     | Purpose                                                   |
-|-------------------------------|-----------------------------------------------------------|
+| Directory                     | Purpose                                                                 |
+|-------------------------------|-------------------------------------------------------------------------|
 | `.github/actions/`            | Shared composite GitHub Actions (runner detect/upgrade, prune, welcome) |
-| `.github/workflows/`          | 10 shared workflow templates                              |
-| `templates-sdk/`              | SDKMAN-based project scaffolding                          |
-| `templates-gradle/`           | Gradle project template                                   |
-| `templates-scala/`            | Scala/sbt project template                                |
-| `templates-miniforge/`        | Miniforge/conda project template                          |
-| `app/`, `list/`, `utilities/` | Gradle subprojects (shared libraries)                     |
-| `build-logic/`                | Gradle convention plugins                                 |
+| `.github/workflows/`          | 10 shared workflow templates                                            |
+| `templates-sdk/`              | SDKMAN-based project scaffolding                                        |
+| `templates-gradle/`           | Gradle project template                                                 |
+| `templates-scala/`            | Scala/sbt project template                                              |
+| `templates-miniforge/`        | Miniforge/conda project template                                        |
+| `app/`, `list/`, `utilities/` | Gradle subprojects (shared libraries)                                   |
+| `build-logic/`                | Gradle convention plugins                                               |
 
 ## Philosophy
 
