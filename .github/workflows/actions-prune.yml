@@ -35,6 +35,12 @@ jobs:
       - name: "Cleanup old action runs"
         uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-runs@main
         timeout-minutes: 5
+        with:
+          keep-last: '1'
+          max-parallel: '24'
+          stale-minutes: '7'
+          dry-run: 'true'
+
 
       - name: "Cleanup orphaned caches"
         if: always()
