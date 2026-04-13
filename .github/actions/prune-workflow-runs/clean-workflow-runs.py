@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, Final
 
@@ -99,30 +100,39 @@ class RunPipeline:
                 run["reason"] = f"stale, {run_age_minutes:.0f}m old, {run['headBranch']}"
         return self
 
+    @staticmethod
+    def _delete_one_run(run: dict) -> dict:
+        """Delete a single run via gh CLI. Annotates the run dict with the result. No printing."""
+        run_id_s = str(run["databaseId"])
+        if DRY_RUN:
+            run["deleted"] = "Muted"
+        else:
+            delete_result = subprocess.run(
+                ["gh", "run", "delete", run_id_s],
+                capture_output=True, text=True
+            )
+            if delete_result.returncode == 0:
+                run["deleted"] = "Deleted"
+            else:
+                run["deleted"] = "Failed"
+                run["delete_error"] = delete_result.stderr.strip()
+        return run
+
     def remove_discarded(self) -> RunPipeline:
-        """Delete runs marked as Discard. Respects module-level DRY_RUN."""
+        """Fan out deletion of all Discard-marked runs, collect results. Respects module-level DRY_RUN."""
         discarded_runs = [run for run in self.runs if run.get("kept") == "Discard"]
         if not discarded_runs:
             print("Nothing to remove.")
             return self
 
+        with ThreadPoolExecutor() as executor:
+            list(executor.map(self._delete_one_run, discarded_runs))
+
         for run in discarded_runs:
             run_id_s = str(run["databaseId"])
-            delete_command_s = f"gh run delete {run_id_s}"
-            if DRY_RUN:
-                run["deleted"] = "Muted"
-                print(f"  {delete_command_s}  # muted: {run['reason']}")
-            else:
-                delete_result = subprocess.run(
-                    ["gh", "run", "delete", run_id_s],
-                    capture_output=True, text=True
-                )
-                if delete_result.returncode == 0:
-                    run["deleted"] = "Deleted"
-                    print(f"  {delete_command_s}  # done: {run['reason']}")
-                else:
-                    run["deleted"] = "Failed"
-                    print(f"  {delete_command_s}  # FAILED: {run['reason']}  {delete_result.stderr.strip()}")
+            deleted_status = run["deleted"]
+            error_text = f"  {run.get('delete_error', '')}" if run.get("delete_error") else ""
+            print(f"  gh run delete {run_id_s}  # {deleted_status.lower()}: {run['reason']}{error_text}")
 
         return self
 
