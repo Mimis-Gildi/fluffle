@@ -4,13 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [5.1.0]
+## [6.1.0]
 
-- The release.
+### Added
+- Releaser workflow validated end-to-end on self-hosted runners (annotated tags, GitHub Releases, changelog extraction)
 
-## [5.0.3]
+### Fixed
+- Releaser `git push origin "$TAG"` credential failure on Debian hosts -- same `git remote set-url` fix as incrementer
+- Prune workflow `stale-minutes` push fallback tightened from `7` to `3` minutes
 
-- Release activities for testing workflow bug fixes.
+### Changed
+- Prune workflow `dry-run` production default set to `false` across all trigger types
 
 ## [5.0.2]
 
