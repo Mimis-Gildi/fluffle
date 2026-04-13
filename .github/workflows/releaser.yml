@@ -97,10 +97,13 @@ jobs:
 
       - name: Create annotated tag if not already present
         timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.version-info.outputs.tag }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "::warning title=Tag Exists::$TAG already exists. Skipping."
           else
