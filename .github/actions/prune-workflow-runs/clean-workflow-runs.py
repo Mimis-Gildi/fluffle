@@ -164,17 +164,19 @@ def write_summary(workflow_runs: list[dict]) -> None:
     discarded_runs = [run for run in workflow_runs if run.get("kept") == "Discard"]
 
     print(f"\n### Kept ({len(kept_runs)})\n", file=out)
-    print("| Run ID | Workflow | Branch | Created | Reason |", file=out)
-    print("|--------|----------|--------|---------|--------|", file=out)
+    print("| Run ID | Workflow | Branch | Status | Created | Reason |", file=out)
+    print("|--------|----------|--------|--------|---------|--------|", file=out)
     for run in kept_runs:
-        print(f"| {run['databaseId']} | {run['workflowName']} | {run['headBranch']} | {run['createdAt']} | {run['reason']} |", file=out)
+        run_status = run.get("status", "?")
+        print(f"| {run['databaseId']} | {run['workflowName']} | {run['headBranch']} | {run_status} | {run['createdAt']} | {run['reason']} |", file=out)
 
     print(f"\n### Discarded ({len(discarded_runs)})\n", file=out)
-    print("| Run ID | Workflow | Branch | Created | Reason | Result |", file=out)
-    print("|--------|----------|--------|---------|--------|--------|", file=out)
+    print("| Run ID | Workflow | Branch | Status | Created | Reason | Result |", file=out)
+    print("|--------|----------|--------|--------|---------|--------|--------|", file=out)
     for run in discarded_runs:
+        run_status = run.get("status", "?")
         deleted_status = run.get("deleted", "Pending")
-        print(f"| {run['databaseId']} | {run['workflowName']} | {run['headBranch']} | {run['createdAt']} | {run['reason']} | {deleted_status} |", file=out)
+        print(f"| {run['databaseId']} | {run['workflowName']} | {run['headBranch']} | {run_status} | {run['createdAt']} | {run['reason']} | {deleted_status} |", file=out)
 
     dry_run_notice_s = " (DRY RUN)" if DRY_RUN else ""
     print(f"\n**Total:** {len(workflow_runs)} | **Kept:** {len(kept_runs)} | **Discarded:** {len(discarded_runs)}{dry_run_notice_s}", file=out)

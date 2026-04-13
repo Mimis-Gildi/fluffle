@@ -53,7 +53,7 @@ concurrency:
 env:
   PRUNE_KEEP_LAST: ${{ inputs.keep-last || '1' }}
   PRUNE_STALE_MINUTES: ${{ inputs.stale-minutes || '3' }}
-  PRUNE_DRY_RUN: ${{ inputs.dry-run || 'false' }}
+  PRUNE_DRY_RUN: ${{ inputs.dry-run || 'true' }}
 
 jobs:
 
