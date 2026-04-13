@@ -8,12 +8,12 @@ on:
         description: "Number of recent items to keep per workflow/key"
         type: string
         required: false
-        default: '1'
+        default: '0'
       stale-minutes:
         description: "Grace window in minutes"
         type: string
         required: false
-        default: '3'
+        default: '0'
       dry-run:
         description: "Log only, do not delete"
         type: string
@@ -53,7 +53,7 @@ concurrency:
 env:
   PRUNE_KEEP_LAST: ${{ inputs.keep-last || '1' }}
   PRUNE_STALE_MINUTES: ${{ inputs.stale-minutes || '3' }}
-  PRUNE_DRY_RUN: ${{ inputs.dry-run || 'true' }}
+  PRUNE_DRY_RUN: ${{ inputs.dry-run || 'false' }}
 
 jobs:
 
