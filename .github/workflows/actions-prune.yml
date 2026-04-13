@@ -35,7 +35,7 @@ on:
         description: "Log only, do not delete"
         type: string
         required: false
-        default: 'true'
+        default: 'false'
   push:
 
 permissions:
