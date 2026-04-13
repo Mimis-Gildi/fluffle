@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, Final
 
-LOG_PAGE_SIZE: Final[int] = 25
 QUERY_LIMIT_S: Final[str] = "1000"
 DEFAULT_STALE_MINUTES: Final[int] = int(os.environ.get("STALE_MINUTES", "11"))
 DEFAULT_KEEP_LAST_ON_MAIN: Final[int] = int(os.environ.get("KEEP_LAST", "2"))
@@ -61,7 +60,7 @@ class RunPipeline:
 
     def newest_first(self) -> RunPipeline:
         """Sort runs newest-first by createdAt. Explicit because gh run list order is undocumented."""
-        self.runs.sort(key=lambda row: row.get("createdAt", ""), reverse=True)
+        self.runs.sort(key=lambda row: row["createdAt"], reverse=True)
         return self
 
     def keep_latest_on_main(self, keep_last_on_main: int = DEFAULT_KEEP_LAST_ON_MAIN) -> RunPipeline:
