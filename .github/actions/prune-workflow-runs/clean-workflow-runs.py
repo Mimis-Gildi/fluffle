@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Prune workflow runs. Designed for incremental local testing."""
+from __future__ import annotations
 
 import json
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone
-from typing import Callable, Final, Self
+from typing import Callable, Final
 
 LOG_PAGE_SIZE: Final[int] = 25
 QUERY_LIMIT_S: Final[str] = "1000"
@@ -32,7 +33,7 @@ class RunPipeline:
         self.runs: list[dict] = runs
 
     @classmethod
-    def on_current_branch(cls) -> Self:
+    def on_current_branch(cls) -> RunPipeline:
         """Detect the current branch from environment or git."""
         detected_branch = os.environ.get("BRANCH") or subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -41,7 +42,7 @@ class RunPipeline:
         print(f"Branch: {detected_branch}")
         return cls(branch=detected_branch, runs=[])
 
-    def fetch_all_runs(self) -> Self:
+    def fetch_all_runs(self) -> RunPipeline:
         """Fetch runs from GitHub. Filtered by branch on feature branches, unfiltered on main."""
         workflow_runs_query_fields = "databaseId,workflowName,createdAt,headBranch,event,status"
         workflow_runs_command = ["gh", "run", "list", "--json", workflow_runs_query_fields, "--limit", QUERY_LIMIT_S]
@@ -57,12 +58,12 @@ class RunPipeline:
         print(f"Fetched {len(self.runs)} runs.")
         return self
 
-    def newest_first(self) -> Self:
+    def newest_first(self) -> RunPipeline:
         """Sort runs newest-first by createdAt. Explicit because gh run list order is undocumented."""
         self.runs.sort(key=lambda row: row.get("createdAt", ""), reverse=True)
         return self
 
-    def keep_latest_on_main(self, keep_last_on_main: int = DEFAULT_KEEP_LAST_ON_MAIN) -> Self:
+    def keep_latest_on_main(self, keep_last_on_main: int = DEFAULT_KEEP_LAST_ON_MAIN) -> RunPipeline:
         """On main: mark the last N runs per workflow as kept, rest as overflow. No-op on feature branches."""
         if self.branch != "main":
             return self
@@ -83,7 +84,7 @@ class RunPipeline:
 
         return self
 
-    def keep_within_grace_window(self, stale_minutes: int = DEFAULT_STALE_MINUTES) -> Self:
+    def keep_within_grace_window(self, stale_minutes: int = DEFAULT_STALE_MINUTES) -> RunPipeline:
         """Mark unclassified runs: kept if within the grace window, deletable if stale."""
         now = datetime.now(timezone.utc)
         for run in self.runs:
@@ -98,7 +99,7 @@ class RunPipeline:
                 run["reason"] = f"stale, {run_age_minutes:.0f}m old, {run['headBranch']}"
         return self
 
-    def remove_discarded(self) -> Self:
+    def remove_discarded(self) -> RunPipeline:
         """Delete runs marked as Discard. Respects module-level DRY_RUN."""
         discarded_runs = [run for run in self.runs if run.get("kept") == "Discard"]
         if not discarded_runs:
@@ -125,7 +126,7 @@ class RunPipeline:
 
         return self
 
-    def report(self, actor: Callable[[list[dict]], None]) -> Self:
+    def report(self, actor: Callable[[list[dict]], None]) -> RunPipeline:
         """Pass the run collection to an actor function (print, summarize, etc.)"""
         actor(self.runs)
         return self
