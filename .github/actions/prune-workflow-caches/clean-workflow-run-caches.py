@@ -4,16 +4,22 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, Final
 
-LOG_PAGE_SIZE: Final[int] = 25
 DEFAULT_STALE_MINUTES: Final[int] = int(os.environ.get("STALE_MINUTES", "11"))
 DEFAULT_KEEP_LAST_ON_MAIN: Final[int] = int(os.environ.get("KEEP_LAST", "2"))
 DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1", "yes")
+
+
+# Compiled patterns
+
+NANOSECOND_TRUNCATION_PATTERN = re.compile(r'(\.\d{6})\d+')
+CACHE_KEY_PATTERN = re.compile(r'^(.+)-([0-9a-f]{40})$')
 
 
 # Supporting functions
@@ -21,8 +27,7 @@ DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1"
 def parse_cache_timestamp(iso_timestamp_s: str) -> datetime:
     """Parse GitHub's ISO 8601 timestamp into a timezone-aware datetime.
     Truncates nanosecond precision to microseconds (Python limit)."""
-    import re
-    truncated_timestamp_s = re.sub(r'(\.\d{6})\d+', r'\1', iso_timestamp_s)
+    truncated_timestamp_s = NANOSECOND_TRUNCATION_PATTERN.sub(r'\1', iso_timestamp_s)
     return datetime.fromisoformat(truncated_timestamp_s.replace("Z", "+00:00"))
 
 
@@ -31,6 +36,28 @@ def cache_effective_timestamp(cache: dict) -> datetime:
     created = parse_cache_timestamp(cache.get("created_at", "1970-01-01T00:00:00Z"))
     accessed = parse_cache_timestamp(cache.get("last_accessed_at", "1970-01-01T00:00:00Z"))
     return max(created, accessed)
+
+
+def parse_cache_key(full_cache_key: str) -> tuple[str, str]:
+    """Parse a cache key into (prefix, commit_sha).
+
+    Expected format: '{identifier}-{ref}-{40-char-hex-sha}'
+    Example: 'qodana-2025.3-refs/heads/main-170e8cf8c23070c4f58c0ba2a1459dac32c56851'
+    Returns: ('qodana-2025.3-refs/heads/main', '170e8cf8c23070c4f58c0ba2a1459dac32c56851')
+
+    Fails hard if the key doesn't match -- we want to know about unexpected formats.
+    """
+    match = CACHE_KEY_PATTERN.match(full_cache_key)
+    if not match:
+        print(f"::error title=Unexpected Cache Key::Cannot parse cache key: {full_cache_key}", file=sys.stderr)
+        sys.exit(1)
+    return match.group(1), match.group(2)
+
+
+def cache_key_prefix(cache: dict) -> str:
+    """Extract the stable prefix from a cache key, stripping the commit SHA."""
+    prefix, _ = parse_cache_key(cache["key"])
+    return prefix
 
 
 def detect_repository() -> str:
@@ -98,23 +125,24 @@ class CachePipeline:
         return self
 
     def keep_latest_on_main(self, keep_last_on_main: int = DEFAULT_KEEP_LAST_ON_MAIN) -> CachePipeline:
-        """On main: mark the last N caches per key as kept, rest as overflow. No-op on feature branches."""
+        """On main: mark the last N caches per key prefix as kept, rest as overflow. No-op on feature branches."""
         if self.branch != "main":
             return self
 
-        main_caches_by_key: dict[str, list[dict]] = {}
+        main_caches_by_prefix: dict[str, list[dict]] = {}
         for cache in self.caches:
             if cache.get("ref") == "refs/heads/main":
-                main_caches_by_key.setdefault(cache["key"], []).append(cache)
+                prefix = cache_key_prefix(cache)
+                main_caches_by_prefix.setdefault(prefix, []).append(cache)
 
-        for cache_key, key_caches in main_caches_by_key.items():
-            for position, cache in enumerate(key_caches):
+        for key_prefix, prefix_caches in main_caches_by_prefix.items():
+            for position, cache in enumerate(prefix_caches):
                 if position < keep_last_on_main:
                     cache["kept"] = "Keep"
-                    cache["reason"] = f"main, #{position + 1} of {cache_key}"
+                    cache["reason"] = f"main, #{position + 1} of {key_prefix}"
                 else:
                     cache["kept"] = "Discard"
-                    cache["reason"] = f"main overflow, #{position + 1} of {cache_key}"
+                    cache["reason"] = f"main overflow, #{position + 1} of {key_prefix}"
 
         return self
 
@@ -193,19 +221,21 @@ def write_summary(caches: list[dict]) -> None:
     discarded_caches = [cache for cache in caches if cache.get("kept") == "Discard"]
 
     print(f"\n### Kept ({len(kept_caches)})\n", file=out)
-    print("| ID | Key | Ref | Size | Last Accessed | Reason |", file=out)
-    print("|----|-----|-----|------|---------------|--------|", file=out)
+    print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason |", file=out)
+    print("|----|------------|-----|------|---------------|--------|", file=out)
     for cache in kept_caches:
         size_mb = cache.get("size_in_bytes", 0) / (1024 * 1024)
-        print(f"| {cache['id']} | {cache['key']} | {cache.get('ref', '')} | {size_mb:.1f}MB | {cache.get('last_accessed_at', '')} | {cache['reason']} |", file=out)
+        prefix = cache_key_prefix(cache)
+        print(f"| {cache['id']} | {prefix} | {cache.get('ref', '')} | {size_mb:.1f}MB | {cache.get('last_accessed_at', '')} | {cache['reason']} |", file=out)
 
     print(f"\n### Discarded ({len(discarded_caches)})\n", file=out)
-    print("| ID | Key | Ref | Size | Last Accessed | Reason | Result |", file=out)
-    print("|----|-----|-----|------|---------------|--------|--------|", file=out)
+    print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason | Result |", file=out)
+    print("|----|------------|-----|------|---------------|--------|--------|", file=out)
     for cache in discarded_caches:
         size_mb = cache.get("size_in_bytes", 0) / (1024 * 1024)
+        prefix = cache_key_prefix(cache)
         deleted_status = cache.get("deleted", "Pending")
-        print(f"| {cache['id']} | {cache['key']} | {cache.get('ref', '')} | {size_mb:.1f}MB | {cache.get('last_accessed_at', '')} | {cache['reason']} | {deleted_status} |", file=out)
+        print(f"| {cache['id']} | {prefix} | {cache.get('ref', '')} | {size_mb:.1f}MB | {cache.get('last_accessed_at', '')} | {cache['reason']} | {deleted_status} |", file=out)
 
     total_discarded_size_mb = sum(cache.get("size_in_bytes", 0) for cache in discarded_caches) / (1024 * 1024)
     dry_run_notice_s = " (DRY RUN)" if DRY_RUN else ""
