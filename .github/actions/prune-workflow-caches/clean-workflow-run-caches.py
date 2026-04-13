@@ -19,8 +19,11 @@ DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1"
 # Supporting functions
 
 def parse_cache_timestamp(iso_timestamp_s: str) -> datetime:
-    """Parse GitHub's ISO 8601 timestamp into a timezone-aware datetime."""
-    return datetime.fromisoformat(iso_timestamp_s.replace("Z", "+00:00"))
+    """Parse GitHub's ISO 8601 timestamp into a timezone-aware datetime.
+    Truncates nanosecond precision to microseconds (Python limit)."""
+    import re
+    truncated_timestamp_s = re.sub(r'(\.\d{6})\d+', r'\1', iso_timestamp_s)
+    return datetime.fromisoformat(truncated_timestamp_s.replace("Z", "+00:00"))
 
 
 def cache_effective_timestamp(cache: dict) -> datetime:
