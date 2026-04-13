@@ -1,11 +1,23 @@
 name: Prune Workflow Caches
-description: "Deletes stale GitHub Actions caches, keeping only those created within the last few minutes."
+description: "Prunes stale GitHub Actions caches. On main: keeps the last N per cache key. On feature branches: deletes caches older than the grace window."
 author: "rdd13r"
 branding:
   icon: "trash-2"
   color: "orange"
 
 inputs:
+  keep-last:
+    description: "Number of recent caches to keep per key on main"
+    required: false
+    default: '2'
+  stale-minutes:
+    description: "Delete caches older than this many minutes (grace window)"
+    required: false
+    default: '11'
+  dry-run:
+    description: "When true, log what would be deleted without actually deleting"
+    required: false
+    default: 'false'
   token:
     description: "GitHub token with actions:write permission"
     required: false
@@ -16,18 +28,11 @@ runs:
 
   steps:
 
-    - name: Ensure GitHub Actions Cache Extension
-      shell: zsh -l {0}
-      env:
-        GH_TOKEN: ${{ inputs.token }}
-      run: |
-        if ! gh actions-cache --help &>/dev/null; then
-          echo "::notice title=Cache Extension::Installing gh-actions-cache extension."
-          gh extension install actions/gh-actions-cache
-        fi
-
     - id: prune-caches
       shell: zsh -l {0}
       env:
         GH_TOKEN: ${{ inputs.token }}
-      run: ${{ github.action_path }}/clean-workflow-run-caches.sh
+        KEEP_LAST: ${{ inputs.keep-last }}
+        STALE_MINUTES: ${{ inputs.stale-minutes }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: ${{ github.action_path }}/clean-workflow-run-caches.py

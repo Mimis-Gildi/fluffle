@@ -3,7 +3,39 @@ run-name: "Pruned Old Runs on ${{ github.repository }} by ${{ github.actor }} wi
 
 on:
   workflow_dispatch:
+    inputs:
+      keep-last:
+        description: "Number of recent items to keep per workflow/key"
+        type: string
+        required: false
+        default: '1'
+      stale-minutes:
+        description: "Grace window in minutes"
+        type: string
+        required: false
+        default: '7'
+      dry-run:
+        description: "Log only, do not delete"
+        type: string
+        required: false
+        default: 'true'
   workflow_call:
+    inputs:
+      keep-last:
+        description: "Number of recent items to keep per workflow/key"
+        type: string
+        required: false
+        default: '1'
+      stale-minutes:
+        description: "Grace window in minutes"
+        type: string
+        required: false
+        default: '7'
+      dry-run:
+        description: "Log only, do not delete"
+        type: string
+        required: false
+        default: 'true'
   push:
 
 permissions:
@@ -17,6 +49,11 @@ defaults:
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-actions-prune"
   cancel-in-progress: false
+
+env:
+  PRUNE_KEEP_LAST: ${{ inputs.keep-last || '1' }}
+  PRUNE_STALE_MINUTES: ${{ inputs.stale-minutes || '7' }}
+  PRUNE_DRY_RUN: ${{ inputs.dry-run || 'true' }}
 
 jobs:
 
@@ -36,13 +73,17 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-runs@main
         timeout-minutes: 5
         with:
-          keep-last: '1'
-          stale-minutes: '7'
-          dry-run: 'true'
+          keep-last: ${{ env.PRUNE_KEEP_LAST }}
+          stale-minutes: ${{ env.PRUNE_STALE_MINUTES }}
+          dry-run: ${{ env.PRUNE_DRY_RUN }}
 
 
       - name: "Cleanup orphaned caches"
         if: always()
         uses: Mimis-Gildi/fluffle/.github/actions/prune-workflow-caches@main
         timeout-minutes: 5
+        with:
+          keep-last: ${{ env.PRUNE_KEEP_LAST }}
+          stale-minutes: ${{ env.PRUNE_STALE_MINUTES }}
+          dry-run: ${{ env.PRUNE_DRY_RUN }}
 
