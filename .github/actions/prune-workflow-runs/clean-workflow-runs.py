@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Callable, Final
 
 QUERY_LIMIT_S: Final[str] = "1000"
+TERMINAL_RUN_STATUSES: Final[set[str]] = {"completed", "cancelled", "failure", "success", "skipped", "timed_out", "stale"}
 DEFAULT_STALE_MINUTES: Final[int] = int(os.environ.get("STALE_MINUTES", "11"))
 DEFAULT_KEEP_LAST_ON_MAIN: Final[int] = int(os.environ.get("KEEP_LAST", "2"))
 DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1", "yes")
@@ -61,6 +62,17 @@ class RunPipeline:
     def newest_first(self) -> RunPipeline:
         """Sort runs newest-first by createdAt. Explicit because gh run list order is undocumented."""
         self.runs.sort(key=lambda row: row["createdAt"], reverse=True)
+        return self
+
+    def protect_in_progress(self) -> RunPipeline:
+        """Mark non-terminal runs as kept. Never delete a run that's still executing."""
+        for run in self.runs:
+            if "kept" in run:
+                continue
+            run_status = run.get("status", "unknown")
+            if run_status not in TERMINAL_RUN_STATUSES:
+                run["kept"] = "Keep"
+                run["reason"] = f"in progress ({run_status}), {run['headBranch']}"
         return self
 
     def keep_latest_on_main(self, keep_last_on_main: int = DEFAULT_KEEP_LAST_ON_MAIN) -> RunPipeline:
@@ -177,6 +189,7 @@ if __name__ == "__main__":
     RunPipeline.on_current_branch() \
         .fetch_all_runs() \
         .newest_first() \
+        .protect_in_progress() \
         .keep_latest_on_main() \
         .keep_within_grace_window() \
         .remove_discarded() \
