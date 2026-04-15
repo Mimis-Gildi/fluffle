@@ -20,6 +20,11 @@ on:
         type: string
         default: ''
         description: 'Glob pattern for release artifacts to attach'
+      release-title:
+        required: false
+        type: string
+        default: ''
+        description: 'Release title (defaults to version tag)'
   workflow_call:
     inputs:
       build-tasks:
@@ -27,6 +32,10 @@ on:
         type: string
         default: 'build'
       artifacts:
+        required: false
+        type: string
+        default: ''
+      release-title:
         required: false
         type: string
         default: ''
@@ -67,17 +76,20 @@ jobs:
 
       - name: Extract changelog
         id: changelog
+        env:
+          VERSION: ${{ steps.version-info.outputs.version }}
         run: |
-          VERSION="${{ steps.version-info.outputs.version }}"
           BODY=""
-          found=0
-          for line in "${(@f)"$(<CHANGELOG.md)"}"; do
-            if [[ "$line" == "## ["* ]]; then
-              (( found )) && break
-              [[ "$line" == *"[${VERSION}]"* ]] && found=1 && continue
-            fi
-            (( found )) && [[ "$line" != "---" ]] && BODY+="$line"$'\n'
-          done
+          if [[ -f CHANGELOG.md ]]; then
+            found=0
+            for line in "${(@f)"$(<CHANGELOG.md)"}"; do
+              if [[ "$line" == "## ["* ]]; then
+                (( found )) && break
+                [[ "$line" == *"[${VERSION}]"* ]] && found=1 && continue
+              fi
+              (( found )) && [[ "$line" != "---" ]] && BODY+="$line"$'\n'
+            done
+          fi
 
           if [[ -z "${BODY//[[:space:]]/}" ]]; then
             echo "::warning title=No Changelog::No changelog entry for v$VERSION. Release will have empty notes."
@@ -92,40 +104,41 @@ jobs:
 
       - name: Build
         timeout-minutes: 9
+        env:
+          BUILD_TASKS: ${{ inputs.build-tasks }}
         run: |
           source "$SDKMAN_INIT"
-          gradle ${{ inputs.build-tasks }}
+          gradle ${=BUILD_TASKS}
 
-      - name: Create annotated tag if not already present
+      - name: Create annotated tag
         timeout-minutes: 3
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version-info.outputs.tag }}
         run: |
-          TAG="${{ steps.version-info.outputs.tag }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::warning title=Tag Exists::$TAG already exists. Skipping."
-          else
-            git tag -a "$TAG" -m "Release $TAG"
-            git push origin "$TAG"
-            echo "::notice title=Tag Created:: Created and pushed $TAG"
-          fi
+          git tag -af "$TAG" -m "Release $TAG"
+          git push origin "$TAG" --force
 
-      - name: Publish GitHub Release
+      - name: Publish Release and Artifacts
         timeout-minutes: 3
+        env:
+          TAG: ${{ steps.version-info.outputs.tag }}
+          ARTIFACTS: ${{ inputs.artifacts }}
+          RELEASE_BODY: ${{ steps.changelog.outputs.body }}
+          RELEASE_TITLE: ${{ inputs.release-title }}
         run: |
-          TAG="${{ steps.version-info.outputs.tag }}"
-          ARTIFACTS="${{ inputs.artifacts }}"
-          if gh release view "$TAG" &>/dev/null; then
-            echo "::warning title=Release Exists::$TAG already exists. Skipping."
-          else
-            ARGS=(--title "Release Bundle $TAG" --notes "${{ steps.changelog.outputs.body }}")
-            if [[ -n "$ARTIFACTS" ]]; then
-              gh release create "$TAG" "${ARGS[@]}" $~ARTIFACTS
-            else
-              gh release create "$TAG" "${ARGS[@]}"
-            fi
-            echo "::notice title=Released::Published $TAG"
+          [[ -z "$RELEASE_TITLE" ]] && RELEASE_TITLE="$TAG"
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
+
+          if [[ -n "$ARTIFACTS" ]]; then
+            setopt local_options NULL_GLOB
+            uploaded=0
+            for file in $~ARTIFACTS; do
+              gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
+              (( uploaded++ ))
+            done
+            (( uploaded == 0 )) && echo "::warning title=No Artifacts::No files matched '$ARTIFACTS'"
           fi
