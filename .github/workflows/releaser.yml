@@ -66,6 +66,10 @@ jobs:
       - name: Extract version
         id: version-info
         run: |
+          if [[ ! -f gradle.properties ]]; then
+            echo "::error title=Missing File::gradle.properties not found"
+            exit 1
+          fi
           VERSION=${${(M)${(f)"$(<gradle.properties)"}:#version=*}#version=}
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error title=Version Invalid::Expected semantic version (X.X.X) in gradle.properties, got '${VERSION:-empty}'"
@@ -87,7 +91,7 @@ jobs:
                 (( found )) && break
                 [[ "$line" == *"[${VERSION}]"* ]] && found=1 && continue
               fi
-              (( found )) && [[ "$line" != "---" ]] && BODY+="$line"$'\n'
+              (( found )) && [[ ! "$line" =~ ^(---+|\*\*\*+|___+)[[:space:]]*$ ]] && BODY+="$line"$'\n'
             done
           fi
 
@@ -98,7 +102,7 @@ jobs:
 
           {
             echo 'body<<EOF_CHANGELOG'
-            printf '%s' "$BODY"
+            printf '%s\n' "$BODY"
             echo 'EOF_CHANGELOG'
           } >> $GITHUB_OUTPUT
 
@@ -118,7 +122,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git tag -af "$TAG" -m "Release $TAG"
+          git tag -af "$TAG" -m "$TAG"
           git push origin "$TAG" --force
 
       - name: Publish Release and Artifacts
