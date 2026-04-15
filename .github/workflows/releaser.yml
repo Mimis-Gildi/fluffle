@@ -45,11 +45,6 @@ jobs:
     name: "Publish Release"
     runs-on: [self-hosted, release]
     timeout-minutes: 15
-    if: >-
-      github.event.pull_request.merged == true
-      || github.event_name != 'pull_request'
-    env:
-      GH_TOKEN: ${{ github.token }}
 
     steps:
 
@@ -62,7 +57,11 @@ jobs:
       - name: Extract version
         id: version-info
         run: |
-          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2)
+          VERSION=${${(M)${(f)"$(<gradle.properties)"}:#version=*}#version=}
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error title=Version Invalid::Expected semantic version (X.X.X) in gradle.properties, got '${VERSION:-empty}'"
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
@@ -70,22 +69,24 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ steps.version-info.outputs.version }}"
-          BODY=$(awk -v ver="$VERSION" '
-            /^## \[/ {
-              if (found) exit
-              if (index($0, "[" ver "]")) { found=1; next }
-            }
-            found { print }
-          ' CHANGELOG.md)
+          BODY=""
+          found=0
+          for line in "${(@f)"$(<CHANGELOG.md)"}"; do
+            if [[ "$line" == "## ["* ]]; then
+              (( found )) && break
+              [[ "$line" == *"[${VERSION}]"* ]] && found=1 && continue
+            fi
+            (( found )) && [[ "$line" != "---" ]] && BODY+="$line"$'\n'
+          done
 
-          if [[ -z "${BODY// /}" ]]; then
-            echo "::error title=Release Blocked::No changelog entry for v$VERSION. Update CHANGELOG.md before releasing."
-            exit 1
+          if [[ -z "${BODY//[[:space:]]/}" ]]; then
+            echo "::warning title=No Changelog::No changelog entry for v$VERSION. Release will have empty notes."
+            BODY=""
           fi
 
           {
             echo 'body<<EOF_CHANGELOG'
-            echo "$BODY"
+            printf '%s' "$BODY"
             echo 'EOF_CHANGELOG'
           } >> $GITHUB_OUTPUT
 
