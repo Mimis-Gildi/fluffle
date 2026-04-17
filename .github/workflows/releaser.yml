@@ -51,6 +51,8 @@ defaults:
 jobs:
 
   release-publish:
+    concurrency:
+      group: fluffle-releaser-${{ github.ref }}
     name: "Publish Release"
     runs-on: [self-hosted, release]
     timeout-minutes: 15

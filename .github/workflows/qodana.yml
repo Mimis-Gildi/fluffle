@@ -26,6 +26,9 @@ defaults:
 
 jobs:
   qodana-scan:
+    concurrency:
+      group: fluffle-qodana-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: [self-hosted, qodana]
     timeout-minutes: 77
 

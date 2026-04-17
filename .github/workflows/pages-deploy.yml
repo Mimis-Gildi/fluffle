@@ -14,8 +14,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "${{ github.workflow }}-site"
-  cancel-in-progress: false
+  group: fluffle-pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:

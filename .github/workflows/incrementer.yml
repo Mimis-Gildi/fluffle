@@ -49,6 +49,8 @@ defaults:
 jobs:
 
   increment:
+    concurrency:
+      group: fluffle-incrementer-${{ github.ref }}
     runs-on: self-hosted
     timeout-minutes: 5
     permissions:
@@ -125,7 +127,8 @@ jobs:
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git add gradle.properties
           git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }}"
-          git push origin HEAD
+          git pull --rebase
+          git push
 
   summarize:
     needs: increment
