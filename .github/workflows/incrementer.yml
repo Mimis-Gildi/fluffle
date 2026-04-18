@@ -41,6 +41,13 @@ on:
         type: boolean
         default: false
         description: 'Should a global major increment be pushed'
+    outputs:
+      type:
+        value: ${{ jobs.increment.outputs.type }}
+      old:
+        value: ${{ jobs.increment.outputs.old }}
+      new:
+        value: ${{ jobs.increment.outputs.new }}
 
 defaults:
   run:
