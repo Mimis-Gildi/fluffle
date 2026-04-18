@@ -131,6 +131,7 @@ jobs:
       - name: Publish Release and Artifacts
         timeout-minutes: 3
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.version-info.outputs.tag }}
           ARTIFACTS: ${{ inputs.artifacts }}
           RELEASE_BODY: ${{ steps.changelog.outputs.body }}
@@ -140,8 +141,8 @@ jobs:
           (( $+GH_TOKEN )) && echo "GH_TOKEN is set!" || echo "GH_TOKEN is NOT set!"
           
           [[ -z "$RELEASE_TITLE" ]] && RELEASE_TITLE="$TAG"
-          GH_TOKEN="$GITHUB_TOKEN" gh release delete "$TAG" --yes 2>/dev/null || true
-          GH_TOKEN="$GITHUB_TOKEN" gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
 
           if [[ -n "$ARTIFACTS" ]]; then
             setopt local_options NULL_GLOB
@@ -151,7 +152,7 @@ jobs:
                 echo "::error title=Artifact Not Found::Release artifact does not exist: $file"
                 continue
               fi
-              GH_TOKEN="$GITHUB_TOKEN" gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
+              gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
               (( uploaded++ ))
             done
             (( uploaded == 0 )) && echo "::warning title=No Artifacts::No files matched '$ARTIFACTS'"
