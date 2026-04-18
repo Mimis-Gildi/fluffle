@@ -136,6 +136,9 @@ jobs:
           RELEASE_BODY: ${{ steps.changelog.outputs.body }}
           RELEASE_TITLE: ${{ inputs.release-title }}
         run: |
+          (( $+GITHUB_TOKEN )) && echo "GITHUB_TOKEN is set!" || echo "GITHUB_TOKEN is NOT set!" 
+          (( $+GH_TOKEN )) && echo "GH_TOKEN is set!" || echo "GH_TOKEN is NOT set!"
+          
           [[ -z "$RELEASE_TITLE" ]] && RELEASE_TITLE="$TAG"
           GH_TOKEN="$GITHUB_TOKEN" gh release delete "$TAG" --yes 2>/dev/null || true
           GH_TOKEN="$GITHUB_TOKEN" gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
