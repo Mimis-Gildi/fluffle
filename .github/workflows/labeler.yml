@@ -54,5 +54,3 @@ jobs:
       - name: "Label Pull Request pushing labels to GitHub Pull Request"
         if: steps.config-check.outputs.found == 'true'
         uses: actions/labeler@v6.0.1
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
