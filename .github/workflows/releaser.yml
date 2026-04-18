@@ -137,8 +137,8 @@ jobs:
           RELEASE_TITLE: ${{ inputs.release-title }}
         run: |
           [[ -z "$RELEASE_TITLE" ]] && RELEASE_TITLE="$TAG"
-          gh release delete "$TAG" --yes 2>/dev/null || true
-          gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
+          GH_TOKEN="$GITHUB_TOKEN" gh release delete "$TAG" --yes 2>/dev/null || true
+          GH_TOKEN="$GITHUB_TOKEN" gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
 
           if [[ -n "$ARTIFACTS" ]]; then
             setopt local_options NULL_GLOB
@@ -148,7 +148,7 @@ jobs:
                 echo "::error title=Artifact Not Found::Release artifact does not exist: $file"
                 continue
               fi
-              gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
+              GH_TOKEN="$GITHUB_TOKEN" gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
               (( uploaded++ ))
             done
             (( uploaded == 0 )) && echo "::warning title=No Artifacts::No files matched '$ARTIFACTS'"
