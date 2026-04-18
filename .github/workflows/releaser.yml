@@ -144,6 +144,10 @@ jobs:
             setopt local_options NULL_GLOB
             uploaded=0
             for file in $~ARTIFACTS; do
+              if [[ ! -f "$file" ]]; then
+                echo "::error title=Artifact Not Found::Release artifact does not exist: $file"
+                continue
+              fi
               gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
               (( uploaded++ ))
             done
