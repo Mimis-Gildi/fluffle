@@ -20,6 +20,7 @@ on:
       - 'renovate/**'
       - 'dependabot/**'
     types:
+      - synchronize
       - opened
       - reopened
   workflow_dispatch:
@@ -53,6 +54,10 @@ defaults:
   run:
     shell: zsh -l {0}
 
+concurrency:
+  group: fluffle-incrementer-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   increment:
@@ -72,8 +77,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
+          ref: ${{ github.head_ref || github.ref }}
           fetch-depth: 0
           fetch-tags: true
+
 
       - name: Determine increment type
         id: operation
@@ -95,7 +102,7 @@ jobs:
           (( PR_SKIP )) || [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && TYPE=skip
 
           printf '::notice title=Increment Type::%s\n' "$TYPE"
-          echo "type=$TYPE" >> $GITHUB_OUTPUT
+          echo "type=$TYPE" > $GITHUB_OUTPUT
 
       - name: Calculate and apply version
         id: version
