@@ -141,6 +141,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # This is a very specific local work-around for some agents that run on alternative git implementation.
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
           git add gradle.properties
           git fetch --all && git pull
           git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }}"
