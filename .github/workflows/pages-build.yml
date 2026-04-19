@@ -19,9 +19,10 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: "${{ github.workflow }}-jekyll"
-  cancel-in-progress: true
+# Example for caller.
+#concurrency:
+#  group: "${{ github.workflow }}-jekyll"
+#  cancel-in-progress: true
 
 defaults:
   run:

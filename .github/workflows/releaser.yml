@@ -52,8 +52,8 @@ jobs:
 
   release-publish:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.merged == true }}
-    concurrency:
-      group: fluffle-releaser-${{ github.ref }}
+#    concurrency:
+#      group: fluffle-releaser-${{ github.ref }}
     name: "Publish Release"
     runs-on: [self-hosted, release]
     timeout-minutes: 15

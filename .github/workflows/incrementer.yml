@@ -54,15 +54,14 @@ defaults:
   run:
     shell: zsh -l {0}
 
-concurrency:
-  group: fluffle-incrementer-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+# Example for caller.
+#concurrency:
+#  group: fluffle-incrementer-${{ github.head_ref || github.ref }}
+#  cancel-in-progress: true
 
 jobs:
 
   increment:
-    concurrency:
-      group: fluffle-incrementer-${{ github.ref }}
     runs-on: self-hosted
     timeout-minutes: 5
     permissions:

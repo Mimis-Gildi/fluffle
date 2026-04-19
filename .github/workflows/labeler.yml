@@ -22,9 +22,10 @@ permissions:
   pull-requests: write
   issues: write
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-labeler"
-  cancel-in-progress: true
+# Example for caller.
+#concurrency:
+#  group: "${{ github.workflow }}-${{ github.ref }}-labeler"
+#  cancel-in-progress: true
 
 defaults:
   run:

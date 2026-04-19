@@ -29,9 +29,10 @@ permissions:
   pull-requests: write
   contents: read
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-greeting-group"
-  cancel-in-progress: true
+# Example for caller.
+#concurrency:
+#  group: "${{ github.workflow }}-${{ github.ref }}-greeting-group"
+#  cancel-in-progress: true
 
 defaults:
   run:

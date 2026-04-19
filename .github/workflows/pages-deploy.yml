@@ -13,9 +13,10 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: fluffle-pages-deploy-${{ github.ref }}
-  cancel-in-progress: true
+# Example for caller.
+#concurrency:
+#  group: fluffle-pages-deploy-${{ github.ref }}
+#  cancel-in-progress: true
 
 defaults:
   run:

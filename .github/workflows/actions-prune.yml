@@ -46,9 +46,10 @@ defaults:
   run:
     shell: zsh -l {0}
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-actions-prune"
-  cancel-in-progress: false
+# Example for caller.
+#concurrency:
+#  group: "${{ github.workflow }}-${{ github.ref }}-actions-prune"
+#  cancel-in-progress: false
 
 env:
   PRUNE_KEEP_LAST: ${{ inputs.keep-last || '1' }}
