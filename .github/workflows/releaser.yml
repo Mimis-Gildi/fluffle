@@ -121,9 +121,14 @@ jobs:
         timeout-minutes: 3
         env:
           TAG: ${{ steps.version-info.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # This is a very specific local work-around for some agents that run on alternative git implementation.
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
           git fetch --all && git pull
           git tag -af "$TAG" -m "$TAG"
           git push origin "$TAG" --force
