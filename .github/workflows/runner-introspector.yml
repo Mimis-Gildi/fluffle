@@ -3,6 +3,9 @@ run-name: "Introspect Runner on ${{ github.repository }} by ${{ github.actor }} 
 
 on:
   push:
+    branches-ignore:
+      - 'renovate/**'
+      - 'dependabot/**'
   workflow_call:
     inputs:
       host-info:

@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
   workflow_call:
   pull_request:
+    branches-ignore:
+      - 'renovate/**'
+      - 'dependabot/**'
     types:
       - opened
       - reopened

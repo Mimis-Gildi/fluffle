@@ -16,6 +16,9 @@ on:
       - assigned
       - labeled
   pull_request:
+    branches-ignore:
+      - 'renovate/**'
+      - 'dependabot/**'
     types:
       - opened
       - assigned
