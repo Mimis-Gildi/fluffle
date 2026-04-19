@@ -77,14 +77,22 @@ jobs:
 
       - name: Determine increment type
         id: operation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LAST_MSG=$(git log -1 --format='%s')
           LAST_AUTHOR=$(git log -1 --format='%an')
+          gh pr view &>/dev/null && [[ "push" == "${{ github.event_name }}" ]] && PR_SKIP=1 || PR_SKIP=0
+          
+          (( $+GITHUB_TOKEN )) && printf 'GITHUB_TOKEN is set!\n' || printf 'GITHUB_TOKEN is NOT set!\n' 
+          (( $+GH_TOKEN )) && printf 'GH_TOKEN is set!\n' || printf 'GH_TOKEN is NOT set!\n'
+          
+          printf '::trace title=Selector State::In PR skip %s; Author is %s; Message is %s\n' "$PR_SKIP" "$LAST_AUTHOR" "$LAST_MSG"
 
           TYPE=patch
           [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && TYPE=minor
           [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && TYPE=major
-          [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && TYPE=skip
+          (( PR_SKIP )) || [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && TYPE=skip
 
           printf '::notice title=Increment Type::%s\n' "$TYPE"
           echo "type=$TYPE" >> $GITHUB_OUTPUT
