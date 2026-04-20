@@ -19,7 +19,7 @@ on:
         required: false
         type: string
         default: ''
-        description: 'Glob pattern for release artifacts to attach'
+        description: 'JSON array of glob patterns for release artifacts, e.g. ["build/*.pdf"]'
       release-title:
         required: false
         type: string
@@ -70,12 +70,12 @@ jobs:
         id: version-info
         run: |
           if [[ ! -f gradle.properties ]]; then
-            echo "::error title=Missing File::gradle.properties not found"
+            printf '::error title=Missing File::gradle.properties not found\n'
             exit 1
           fi
           VERSION=${${(M)${(f)"$(<gradle.properties)"}:#version=*}#version=}
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error title=Version Invalid::Expected semantic version (X.X.X) in gradle.properties, got '${VERSION:-empty}'"
+            printf '::error title=Version Invalid::Expected semantic version (X.X.X) in gradle.properties, got %s\n' "${VERSION:-empty}"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -99,7 +99,7 @@ jobs:
           fi
 
           if [[ -z "${BODY//[[:space:]]/}" ]]; then
-            echo "::warning title=No Changelog::No changelog entry for v$VERSION. Release will have empty notes."
+            printf '::warning title=No Changelog::No changelog entry for v%s. Release will have empty notes.\n' "$VERSION"
             BODY=""
           fi
 
@@ -142,23 +142,40 @@ jobs:
           RELEASE_BODY: ${{ steps.changelog.outputs.body }}
           RELEASE_TITLE: ${{ inputs.release-title }}
         run: |
-          (( $+GITHUB_TOKEN )) && echo "GITHUB_TOKEN is set!" || echo "GITHUB_TOKEN is NOT set!" 
-          (( $+GH_TOKEN )) && echo "GH_TOKEN is set!" || echo "GH_TOKEN is NOT set!"
+          (( $+GITHUB_TOKEN )) && printf 'GITHUB_TOKEN is set!\n' || printf 'GITHUB_TOKEN is NOT set!\n'
+          (( $+GH_TOKEN )) && printf 'GH_TOKEN is set!\n' || printf 'GH_TOKEN is NOT set!\n'
           
           [[ -z "$RELEASE_TITLE" ]] && RELEASE_TITLE="$TAG"
           gh release delete "$TAG" --yes 2>/dev/null || true
-          gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY"
+          gh release create "$TAG" --title "$RELEASE_TITLE" --notes "$RELEASE_BODY" \
+            || { printf '::error title=Release Failed::Could not create release %s\n' "$TAG"; exit 11 }
 
-          if [[ -n "$ARTIFACTS" ]]; then
+          if [[ -n "${ARTIFACTS// /}" ]]; then
+            # Parse: JSON string → pattern array (fatal if malformed)
+            patterns=("${(@f)$(jq -r '.[]' <<< "$ARTIFACTS")}") \
+              || { printf '::error title=Bad Artifacts::Cannot parse: %s\n' "$ARTIFACTS"; exit 11 }
+
+            # Resolve: patterns → verified files
             setopt local_options NULL_GLOB
-            uploaded=0
-            for file in $~ARTIFACTS; do
-              if [[ ! -f "$file" ]]; then
-                echo "::error title=Artifact Not Found::Release artifact does not exist: $file"
+            files=()
+            for pattern in ${patterns[@]}; do
+              resolved=($~pattern)
+              if (( ! ${#resolved} )); then
+                printf '::error title=No Match::Pattern matched nothing: %s\n' "$pattern"
                 continue
               fi
-              gh release upload "$TAG" "$file" --clobber || echo "::warning title=Upload Failed::Could not upload $file"
-              (( uploaded++ ))
+              for candidate in ${resolved[@]}; do
+                [[ -f "$candidate" ]] && files+=("$candidate") \
+                  || printf '::error title=Not a File::%s is not a regular file\n' "$candidate"
+              done
             done
-            (( uploaded == 0 )) && echo "::warning title=No Artifacts::No files matched '$ARTIFACTS'"
+
+            # Upload: files → results
+            uploaded=0
+            for file in ${files[@]}; do
+              gh release upload "$TAG" "$file" --clobber && (( uploaded++ )) \
+                || printf '::warning title=Upload Failed::%s\n' "$file"
+            done
+
+            printf '::notice title=Artifacts::%d of %d uploaded\n' "$uploaded" "${#files}"
           fi
