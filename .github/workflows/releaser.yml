@@ -171,12 +171,8 @@ jobs:
               done
             done
 
-            # Upload: files → results
-            uploaded=0
+            # Upload
             for file in ${files[@]}; do
-              gh release upload "$TAG" "$file" --clobber && (( uploaded++ )) \
-                || printf '::warning title=Upload Failed::%s\n' "$file"
+              gh release upload "$TAG" "$file" --clobber || printf '::warning title=Upload Failed::%s\n' "$file"
             done
-
-            printf '::notice title=Artifacts::%d of %d uploaded\n' "$uploaded" "${#files}"
           fi
