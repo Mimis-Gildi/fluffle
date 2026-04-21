@@ -79,6 +79,7 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
 
       - name: Determine increment type
