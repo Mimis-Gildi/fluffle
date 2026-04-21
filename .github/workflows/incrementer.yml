@@ -150,7 +150,7 @@ jobs:
 
           git add gradle.properties
           git fetch --all && git pull
-          git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }}"
+          git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }} [skip up]"
           git push
 
   summarize:
