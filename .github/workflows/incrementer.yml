@@ -91,13 +91,9 @@ jobs:
           LAST_AUTHOR=$(git log -1 --format='%an')
 
           # Decompose PR_SKIP into its two drivers
-          printf '::notice title=PR Check::branch=%s; head_ref=${{ github.head_ref }}; ref=${{ github.ref }}\n' \
-            "$(git branch --show-current 2>&1)"
-          PR_JSON=$(gh pr view --json number --jq '.number' 2>&1) ; PR_JSON_RC=$?
-          printf '::notice title=gh pr view --json::rc=%s; out=%s\n' "$PR_JSON_RC" "$PR_JSON"
-          PR_BARE=$(gh pr view 2>&1) ; PR_BARE_RC=$?
-          printf '::notice title=gh pr view bare::rc=%s; out=%s\n' "$PR_BARE_RC" "$PR_BARE"
-          gh pr view &>/dev/null && IN_PR=1 || IN_PR=0
+          PR_OUT=$(gh pr view --json number --jq '.number' 2>&1) && IN_PR=1 || {
+            [[ "$PR_OUT" == *"no pull requests found"* ]] && IN_PR=0 || { printf '::error title=PR Check::%s\n' "$PR_OUT"; exit 1; }
+          }
           [[ "push" == "${{ github.event_name }}" ]] && IN_PUSH=1 || IN_PUSH=0
           (( IN_PR && IN_PUSH )) && PR_SKIP=1 || PR_SKIP=0
 
