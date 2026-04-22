@@ -91,6 +91,8 @@ jobs:
           LAST_AUTHOR=$(git log -1 --format='%an')
 
           # Decompose PR_SKIP into its two drivers
+          printf '::notice title=PR Check::branch=%s; head_ref=${{ github.head_ref }}; ref=${{ github.ref }}; gh_pr_view=%s\n' \
+            "$(git branch --show-current 2>/dev/null || echo 'DETACHED')" "$(gh pr view --json number --jq '.number' 2>&1 || echo 'FAILED')"
           gh pr view &>/dev/null && IN_PR=1 || IN_PR=0
           [[ "push" == "${{ github.event_name }}" ]] && IN_PUSH=1 || IN_PUSH=0
           (( IN_PR && IN_PUSH )) && PR_SKIP=1 || PR_SKIP=0
