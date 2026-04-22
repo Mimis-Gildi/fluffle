@@ -91,7 +91,7 @@ jobs:
           if [[ -f CHANGELOG.md ]]; then
             found=0
             for line in "${(@f)"$(<CHANGELOG.md)"}"; do
-              if [[ "$line" == "## ["* ]]; then
+              if [[ "$line" == "## "* ]]; then
                 (( found )) && break
                 [[ "$line" == *"[${VERSION}]"* ]] && found=1 && continue
               fi
