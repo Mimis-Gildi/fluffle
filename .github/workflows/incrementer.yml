@@ -42,6 +42,11 @@ on:
         type: boolean
         default: false
         description: 'Should a global major increment be pushed'
+      force-minor:
+        required: false
+        type: boolean
+        default: false
+        description: 'Should a PR increment be forced? force-major trumps this.'
     outputs:
       type:
         value: ${{ jobs.increment.outputs.type }}
@@ -90,6 +95,8 @@ jobs:
           LAST_MSG=$(git log -1 --format='%s')
           LAST_AUTHOR=$(git log -1 --format='%an')
 
+          printf 'Git state:\n\tauthor=%s\n\tmessage=%s\n\n' "$LAST_AUTHOR" "$LAST_MSG"
+
           # Decompose PR_SKIP into its two drivers
           PR_OUT=$(gh pr view --json number --jq '.number' 2>&1) && IN_PR=1 || {
             [[ "$PR_OUT" == *"no pull requests found"* ]] && IN_PR=0 || { printf '::error title=PR Check::%s\n' "$PR_OUT"; exit 1; }
@@ -97,14 +104,18 @@ jobs:
           [[ "push" == "${{ github.event_name }}" ]] && IN_PUSH=1 || IN_PUSH=0
           (( IN_PR && IN_PUSH )) && PR_SKIP=1 || PR_SKIP=0
 
+          printf 'PR check:\n\tbranch=%s\n\thead_ref=${{ github.head_ref }}\n\tref=${{ github.ref }}\n\tgh_pr_view=%s\n\tIN_PR=%s\n\n' \
+            "$(git branch --show-current 2>&1)" "$PR_OUT" "$IN_PR"
+
           # Extract commit message signals
           [[ "${LAST_MSG:l}" == *"[push up]"* ]] && MSG_MINOR=1 || MSG_MINOR=0
           [[ "${LAST_MSG:l}" == *"[force up]"* ]] && MSG_MAJOR=1 || MSG_MAJOR=0
           [[ "${LAST_MSG:l}" == *"[skip up]"* ]] && MSG_SKIP=1 || MSG_SKIP=0
           [[ "${LAST_AUTHOR:l}" == *"[bot]"* ]] && IS_BOT=1 || IS_BOT=0
 
-          (( $+GITHUB_TOKEN )) && printf 'GITHUB_TOKEN is set!\n' || printf 'GITHUB_TOKEN is NOT set!\n'
-          (( $+GH_TOKEN )) && printf 'GH_TOKEN is set!\n' || printf 'GH_TOKEN is NOT set!\n'
+          printf 'Tokens:\n\tGITHUB_TOKEN=%s\n\tGH_TOKEN=%s\n\n' \
+            "$( (( $+GITHUB_TOKEN )) && echo 'set' || echo 'NOT set')" \
+            "$( (( $+GH_TOKEN )) && echo 'set' || echo 'NOT set')"
 
           # Trace all driving values
           printf '::notice title=Selector State::event=%s; action=${{ github.event.action }}; IN_PR=%s; IN_PUSH=%s; PR_SKIP=%s; MSG_MINOR=%s; MSG_MAJOR=%s; MSG_SKIP=%s; IS_BOT=%s; force_major=${{ inputs.force-major }}; force_minor=${{ inputs.force-minor }}; author=%s; msg=%s\n' \
@@ -165,7 +176,8 @@ jobs:
 
           git add gradle.properties
           git fetch --all && git pull
-          git commit -m "${(C)${{ steps.operation.outputs.type }}} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }} [skip up]"
+          TYPE=${{ steps.operation.outputs.type }}
+          git commit -m "${(C)TYPE} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }} [skip up]"
           git push
 
   summarize:
