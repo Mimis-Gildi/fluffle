@@ -97,6 +97,12 @@ jobs:
 
           printf 'Git state:\n\tauthor=%s\n\tmessage=%s\n\n' "$LAST_AUTHOR" "$LAST_MSG"
 
+          printf 'Tokens:\n\tGITHUB_TOKEN=%s\n\tGH_TOKEN=%s\n\n' \
+            "$( [[ -n "$GITHUB_TOKEN" ]] && echo 'set' || echo 'NOT set')" \
+            "$( [[ -n "$GH_TOKEN" ]] && echo 'set' || echo 'NOT set')"
+
+          [[ -n "$GH_TOKEN" ]] || { printf '::error title=Token::GH_TOKEN is empty. secrets.CI_PAT did not resolve for this repo (org-secret scope or missing repo secret).\n'; exit 1; }
+
           # Decompose PR_SKIP into its two drivers
           PR_OUT=$(gh pr view --json number --jq '.number' 2>&1) && IN_PR=1 || {
             [[ "$PR_OUT" == *"no pull requests found"* ]] && IN_PR=0 || { printf '::error title=PR Check::%s\n' "$PR_OUT"; exit 1; }
@@ -112,10 +118,6 @@ jobs:
           [[ "${LAST_MSG:l}" == *"[force up]"* ]] && MSG_MAJOR=1 || MSG_MAJOR=0
           [[ "${LAST_MSG:l}" == *"[skip up]"* ]] && MSG_SKIP=1 || MSG_SKIP=0
           [[ "${LAST_AUTHOR:l}" == *"[bot]"* ]] && IS_BOT=1 || IS_BOT=0
-
-          printf 'Tokens:\n\tGITHUB_TOKEN=%s\n\tGH_TOKEN=%s\n\n' \
-            "$( (( $+GITHUB_TOKEN )) && echo 'set' || echo 'NOT set')" \
-            "$( (( $+GH_TOKEN )) && echo 'set' || echo 'NOT set')"
 
           # Trace all driving values
           printf '::notice title=Selector State::event=%s; action=${{ github.event.action }}; IN_PR=%s; IN_PUSH=%s; PR_SKIP=%s; MSG_MINOR=%s; MSG_MAJOR=%s; MSG_SKIP=%s; IS_BOT=%s; force_major=${{ inputs.force-major }}; force_minor=${{ inputs.force-minor }}; author=%s; msg=%s\n' \
