@@ -123,11 +123,17 @@ jobs:
           printf '::notice title=Selector State::event=%s; action=${{ github.event.action }}; IN_PR=%s; IN_PUSH=%s; PR_SKIP=%s; MSG_MINOR=%s; MSG_MAJOR=%s; MSG_SKIP=%s; IS_BOT=%s; force_major=${{ inputs.force-major }}; force_minor=${{ inputs.force-minor }}; author=%s; msg=%s\n' \
             "${{ github.event_name }}" "$IN_PR" "$IN_PUSH" "$PR_SKIP" "$MSG_MINOR" "$MSG_MAJOR" "$MSG_SKIP" "$IS_BOT" "$LAST_AUTHOR" "$LAST_MSG"
 
-          # Determine increment type — UNCHANGED LOGIC
+          # Boundary check: trigger filters exclude renovate/** and dependabot/**, so a bot-triggered create reaching us means the filter is broken upstream.
+          [[ "${{ github.event_name }}" == "create" && "${{ github.actor }}" == *"[bot]"* ]] && {
+            printf '::error title=Trigger Filter::Bot %s triggered create — should be excluded by branches filter. Fix the filter, not the selector.\n' "${{ github.actor }}"
+            exit 1
+          }
+
+          # Determine increment type — order = priority, low first, terminal rules last
           TYPE=patch
           [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && TYPE=minor
+          { (( PR_SKIP )) || [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]]; } && TYPE=skip
           [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && TYPE=major
-          (( PR_SKIP )) || [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]] && TYPE=skip
 
           printf '::notice title=Increment Type::%s\n' "$TYPE"
           echo "type=$TYPE" > $GITHUB_OUTPUT
