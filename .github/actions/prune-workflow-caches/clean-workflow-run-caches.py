@@ -82,13 +82,9 @@ class WorkflowCache:
 
     @staticmethod
     def _parse_key_prefix(full_cache_key: str) -> str:
-        """Extract stable prefix from cache key, stripping commit SHA.
-        Fails hard on unexpected format -- we want to know."""
+        """Extract stable prefix from cache key, stripping commit SHA tail if present."""
         match = CACHE_KEY_PATTERN.match(full_cache_key)
-        if not match:
-            print(f"::error title=Unexpected Cache Key::Cannot parse cache key: {full_cache_key}", file=sys.stderr)
-            sys.exit(1)
-        return match.group(1)
+        return match.group(1) if match else full_cache_key
 
     @staticmethod
     def from_gh_json(raw_cache: dict, repository: str) -> WorkflowCache:
