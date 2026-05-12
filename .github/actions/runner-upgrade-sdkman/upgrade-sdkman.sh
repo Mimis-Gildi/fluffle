@@ -1,18 +1,21 @@
 #!/usr/bin/env zsh
 
-echo -e "## SDKMan Upgrade\n" >> $GITHUB_STEP_SUMMARY
+print '## SDKMan Upgrade' > $GITHUB_STEP_SUMMARY
 
 export RUST_BACKTRACE=1
-source "$SDKMAN_INIT"
+source $SDKMAN_INIT
 
 sdk current
 sdk version
+sdk updated
+sdk flush --all
 
-sdk selfupdate 2>/dev/null || {
-  echo "upgraded=false" >> "$GITHUB_OUTPUT";
-  echo "SDKMan is NOT self-updated." >> $GITHUB_STEP_SUMMARY
-  exit 0 }
+sdk selfupdate || {
+  print 'upgraded=false' > $GITHUB_OUTPUT
+  print '### ERROR: SDKMan did NOT self-update.' >> $GITHUB_STEP_SUMMARY
+  exit 0
+}
 
-printf '::notice title=SDKMAN upgraded::selfupdate is completed.\n'
-sdk version 2>/dev/null >> $GITHUB_STEP_SUMMARY
-echo "upgraded=true" >> "$GITHUB_OUTPUT"
+print '::notice title=SDKMAN upgraded::selfupdate is completed.'
+sdk version >> $GITHUB_STEP_SUMMARY
+print 'upgraded=true' > $GITHUB_OUTPUT

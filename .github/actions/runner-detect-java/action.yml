@@ -2,7 +2,7 @@ name: "Detect Java"
 description: "Checks active Java version via SDKMAN against floor threshold."
 author: "rdd13r"
 branding:
-  icon: "coffee"
+  icon: clock
   color: "orange"
 
 outputs:

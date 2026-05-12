@@ -59,3 +59,7 @@ gradle clean build test
 | `prune-workflow-runs`         | Prune old workflow runs                          |
 | `prune-workflow-caches`       | Prune stale GitHub Actions caches                |
 | `welcome-first-contributor`   | Greet first-time issue/PR authors                |
+
+## Current Work Handoff
+
+@inbox.md

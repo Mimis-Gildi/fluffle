@@ -1,22 +1,19 @@
 #!/usr/bin/env zsh
 
-readonly expected_ruby="$1"
-readonly floor_gems="$2"
-readonly floor_bundler="$3"
+behind() { [[ $(printf '%s\n%s' $1 $2 | sort -V | head -n1) != $1 ]] }
 
-readonly actual_ruby=$(ruby --version 2>/dev/null | awk '{ print $2 }') || exit 0
-readonly actual_gems=$(gem --version 2>/dev/null) || exit 0
-readonly actual_bundler=$(bundle --version 2>/dev/null | awk '{ print $3 }') || exit 0
+readonly expected_ruby=$1
+readonly floor_gems=$2
+readonly floor_bundler=$3
 
-behind() { [[ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -n1)" != "$1" ]] }
+readonly actual_ruby=$(ruby --version | awk '{ print $2 }')
+readonly actual_gems=$(gem --version)
+readonly actual_bundler=$(bundle --version | awk '{ print $3 }')
 
-failed=false
-[[ "$actual_ruby" != "$expected_ruby" ]] && failed=true
-behind "$floor_gems" "$actual_gems" && failed=true
-behind "$floor_bundler" "$actual_bundler" && failed=true
-
-if [[ "$failed" == "true" ]]; then
+if [[ $actual_ruby != $expected_ruby ]] || behind $floor_gems $actual_gems || behind $floor_bundler $actual_bundler; then
   printf '::warning title=Ruby toolchain::ruby %s (exact %s), gems %s (floor %s), bundler %s (floor %s)\n' \
-    "$actual_ruby" "$expected_ruby" "$actual_gems" "$floor_gems" "$actual_bundler" "$floor_bundler"
-  echo "failed=true" > "$GITHUB_OUTPUT"
+    $actual_ruby $expected_ruby $actual_gems $floor_gems $actual_bundler $floor_bundler
+  print 'failed=true' > $GITHUB_OUTPUT
+else
+  printf '::notice title=Ruby Stack OK::Ruby %s, Gems %s, Bundler %s\n' $actual_ruby $actual_gems $actual_bundler
 fi

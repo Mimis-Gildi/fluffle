@@ -1,48 +1,50 @@
 #!/usr/bin/env zsh
 
-readonly candidate="$1"
+readonly candidate=$1
 
-echo -e "## Upgrade $candidate\n" >> $GITHUB_STEP_SUMMARY
-echo "upgraded=false" > "$GITHUB_OUTPUT"
+printf '## Upgrade %s\n' $candidate > $GITHUB_STEP_SUMMARY
+print 'upgraded=false' > $GITHUB_OUTPUT
 
 export RUST_BACKTRACE=1
-source "$SDKMAN_INIT"
+source $SDKMAN_INIT
 
 sdk current
 sdk version
 sdk update
 
-readonly actual=$(sdk current "$candidate" 2>/dev/null | awk '{ print $NF }') || exit 0
-readonly latest=$(sdk list "$candidate" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -V | tail -n1) || exit 0
+readonly actual=$(sdk current $candidate | awk '{ print $NF }')
+readonly latest=$(sdk list $candidate | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -V | tail -n1)
 
-if [[ "$actual" != "$latest" ]]; then
-  sdk install "$candidate" "$latest"
-  sdk default "$candidate" "$latest"
+if [[ $actual != $latest ]]; then
+  sdk install $candidate $latest
+  sdk default $candidate $latest
 
-  echo "Set $candidate to $latest" >> $GITHUB_STEP_SUMMARY
-  printf '::notice title=%s upgraded::%s -> %s\n' "$candidate" "$actual" "$latest"
-  echo "upgraded=true" > "$GITHUB_OUTPUT"
+  printf '### Set %s to %s\n\n' $candidate $latest >> $GITHUB_STEP_SUMMARY
+  printf '::notice title=%s upgraded::%s -> %s\n' $candidate $actual $latest
+  print 'upgraded=true' > $GITHUB_OUTPUT
 fi
 
-readonly local_off=$(sdk list "$candidate" 2>/dev/null | grep 'local only' | awk '{ print $NF }' | sort -V) || true
-readonly installed=$(sdk list "$candidate" 2>/dev/null | grep 'installed' | awk '{ print $NF }' | sort -V) || true
+readonly local_off=$(sdk list $candidate | grep 'local only' | awk '{ print $NF }' | sort -V)
+readonly installed=$(sdk list $candidate | grep 'installed' | awk '{ print $NF }' | sort -V)
 
 for spare in ${(@f)local_off}; do
-  sdk uninstall "$candidate" "$spare"
-  echo "Uninstalled spare $candidate $spare" >> $GITHUB_STEP_SUMMARY
+  sdk uninstall $candidate $spare
+  printf '- uninstalled spare %s %s\n' $candidate $spare >> $GITHUB_STEP_SUMMARY
 done
 
 for shim in ${(@f)installed}; do
-  if [[ "$shim" == "$latest" ]]; then
-    echo "Skipping ACTIVE $candidate $shim" >> $GITHUB_STEP_SUMMARY
+  if [[ $shim == $latest ]]; then
+    printf '- skipping ACTIVE %s %s\n' $candidate $shim >> $GITHUB_STEP_SUMMARY
   else
-    sdk uninstall "$candidate" "$shim"
-    echo "Uninstalled $candidate $shim" >> $GITHUB_STEP_SUMMARY
+    sdk uninstall $candidate $shim
+    printf '- uninstalled %s %s\n' $candidate $shim >> $GITHUB_STEP_SUMMARY
   fi
 done
 
-sdk current "$candidate" 2>/dev/null >> $GITHUB_STEP_SUMMARY
+{
+  printf '### Final %s State:' $candidate
 
-sdk flush tmp >> $GITHUB_STEP_SUMMARY
-sdk flush metadata >> $GITHUB_STEP_SUMMARY
-sdk flush version >> $GITHUB_STEP_SUMMARY
+  sdk current $candidate
+
+  sdk flush --all
+} >> $GITHUB_STEP_SUMMARY
