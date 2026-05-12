@@ -7,7 +7,7 @@ source $SDKMAN_INIT
 
 sdk current
 sdk version
-sdk updated
+sdk update
 sdk flush --all
 
 sdk selfupdate || {
