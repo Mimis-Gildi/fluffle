@@ -1,14 +1,21 @@
 #!/usr/bin/env zsh
 
+print 'failed=true' > $GITHUB_OUTPUT
+
 export RUST_BACKTRACE=1
 source $SDKMAN_INIT
 
 readonly actual=$(sdk current java | awk '{ print $NF }')
-readonly latest=$(sdk list java | grep -oE '21\.[0-9.]+\-tem' | sort -V | tail -n1)
+[[ ! $actual ]] && {
+  print '::warning title=Java not installed::no version configured'
+  exit 0
+}
 
-if [[ $actual != $latest ]]; then
-  printf '::warning title=Java outdated::active is %s while latest is %s\n' $actual $latest
-  print 'failed=true' > $GITHUB_OUTPUT
-else
-  printf '::notice title=Java OK::%s.\n' $actual
-fi
+readonly latest=$(sdk list java | awk '{ for (i=1;i<=NF;i++) if ($i ~ /^21(\.[0-9]+)+-tem$/) print $i }' | sort -V | tail -n1)
+[[ $actual != $latest ]] && {
+  printf '::warning title=Java outdated::active %s, latest %s\n' $actual $latest
+  exit 0
+}
+
+printf '::notice title=Java OK::%s\n' $actual
+print 'failed=false' > $GITHUB_OUTPUT

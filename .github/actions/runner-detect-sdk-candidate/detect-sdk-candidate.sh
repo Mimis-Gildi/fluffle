@@ -8,11 +8,16 @@ export RUST_BACKTRACE=1
 source $SDKMAN_INIT
 
 readonly actual=$(sdk current $candidate | awk '{ print $NF }')
-readonly latest=$(sdk list $candidate | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -V | tail -n1)
+[[ ! $actual ]] && {
+  printf '::warning title=%1$s not installed:: %1$s\n' $candidate
+  exit 0
+}
 
-if [[ $actual != $latest ]]; then
-  printf '::warning title=%s outdated::active %s, latest %s\n' $candidate $actual $latest
-else
-  printf '::notice title=%s Okay::%s\n' $candidate $actual
-  print 'failed=false' > $GITHUB_OUTPUT
-fi
+readonly latest=$(sdk list $candidate | awk '{ for (i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i }' | sort -V | tail -n1)
+[[ $actual != $latest ]] && {
+  printf '::warning title=%1$s outdated::active %2$s, latest %3$s\n' $candidate $actual $latest
+  exit 0
+}
+
+printf '::notice title=%1$s Okay::%2$s\n' $candidate $actual
+print 'failed=false' > $GITHUB_OUTPUT

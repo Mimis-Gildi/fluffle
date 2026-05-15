@@ -62,8 +62,8 @@ jobs:
         id: sdkman
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-sdkman@main
         with:
-          sdkman-version: '5.22.4'
-          sdkman-native: '0.7.32'
+          sdkman-version: '5.23.0'
+          sdkman-native: '0.7.34'
 
       - name: Upgrade SDKMAN
         id: sdkman-upgrade
@@ -85,8 +85,8 @@ jobs:
         id: conda
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
-          conda-version: '26.3.1'
-          mamba-version: '2.5.0'
+          conda-version: '26.3.2'
+          mamba-version: '2.6.1'
           python-version: '3.12.13'
 
       - name: Upgrade Conda
