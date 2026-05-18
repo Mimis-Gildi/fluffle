@@ -2,7 +2,7 @@
 
 readonly candidate=$1
 
-printf '## Upgrade %s\n' $candidate > $GITHUB_STEP_SUMMARY
+printf '## Upgrade %s\n\n' $candidate > $GITHUB_STEP_SUMMARY
 print 'upgraded=false' > $GITHUB_OUTPUT
 
 export RUST_BACKTRACE=1
@@ -28,6 +28,6 @@ sdkman_auto_answer=true sdk install $candidate
 
 readonly outcome=$(sdk current $candidate >&1)
 
-printf '\nOutcome: s\n' $outcome >> $GITHUB_STEP_SUMMARY
+printf '\nOutcome: %s\n' $outcome >> $GITHUB_STEP_SUMMARY
 printf '::notice title=%1$s::%2$s\n' $candidate $outcome
 print 'upgraded=true' > $GITHUB_OUTPUT

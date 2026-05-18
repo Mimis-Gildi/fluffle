@@ -89,54 +89,11 @@ jobs:
 
       - name: Determine increment type
         id: operation
-        env:
-          GH_TOKEN: ${{ secrets.CI_PAT }}
-        run: |
-          LAST_MSG=$(git log -1 --format='%s')
-          LAST_AUTHOR=$(git log -1 --format='%an')
-
-          printf 'Git state:\n\tauthor=%s\n\tmessage=%s\n\n' "$LAST_AUTHOR" "$LAST_MSG"
-
-          printf 'Tokens:\n\tGITHUB_TOKEN=%s\n\tGH_TOKEN=%s\n\n' \
-            "$( [[ -n "$GITHUB_TOKEN" ]] && echo 'set' || echo 'NOT set')" \
-            "$( [[ -n "$GH_TOKEN" ]] && echo 'set' || echo 'NOT set')"
-
-          [[ -n "$GH_TOKEN" ]] || { printf '::error title=Token::GH_TOKEN is empty. secrets.CI_PAT did not resolve for this repo (org-secret scope or missing repo secret).\n'; exit 1; }
-
-          # Decompose PR_SKIP into its two drivers
-          PR_OUT=$(gh pr view --json number --jq '.number' 2>&1) && IN_PR=1 || {
-            [[ "$PR_OUT" == *"no pull requests found"* ]] && IN_PR=0 || { printf '::error title=PR Check::%s\n' "$PR_OUT"; exit 1; }
-          }
-          [[ "push" == "${{ github.event_name }}" ]] && IN_PUSH=1 || IN_PUSH=0
-          (( IN_PR && IN_PUSH )) && PR_SKIP=1 || PR_SKIP=0
-
-          printf 'PR check:\n\tbranch=%s\n\thead_ref=${{ github.head_ref }}\n\tref=${{ github.ref }}\n\tgh_pr_view=%s\n\tIN_PR=%s\n\n' \
-            "$(git branch --show-current 2>&1)" "$PR_OUT" "$IN_PR"
-
-          # Extract commit message signals
-          [[ "${LAST_MSG:l}" == *"[push up]"* ]] && MSG_MINOR=1 || MSG_MINOR=0
-          [[ "${LAST_MSG:l}" == *"[force up]"* ]] && MSG_MAJOR=1 || MSG_MAJOR=0
-          [[ "${LAST_MSG:l}" == *"[skip up]"* ]] && MSG_SKIP=1 || MSG_SKIP=0
-          [[ "${LAST_AUTHOR:l}" == *"[bot]"* ]] && IS_BOT=1 || IS_BOT=0
-
-          # Trace all driving values
-          printf '::notice title=Selector State::event=%s; action=${{ github.event.action }}; IN_PR=%s; IN_PUSH=%s; PR_SKIP=%s; MSG_MINOR=%s; MSG_MAJOR=%s; MSG_SKIP=%s; IS_BOT=%s; force_major=${{ inputs.force-major }}; force_minor=${{ inputs.force-minor }}; author=%s; msg=%s\n' \
-            "${{ github.event_name }}" "$IN_PR" "$IN_PUSH" "$PR_SKIP" "$MSG_MINOR" "$MSG_MAJOR" "$MSG_SKIP" "$IS_BOT" "$LAST_AUTHOR" "$LAST_MSG"
-
-          # Boundary check: trigger filters exclude renovate/** and dependabot/**, so a bot-triggered create reaching us means the filter is broken upstream.
-          [[ "${{ github.event_name }}" == "create" && "${{ github.actor }}" == *"[bot]"* ]] && {
-            printf '::error title=Trigger Filter::Bot %s triggered create — should be excluded by branches filter. Fix the filter, not the selector.\n' "${{ github.actor }}"
-            exit 1
-          }
-
-          # Determine increment type — order = priority, low first, terminal rules last
-          TYPE=patch
-          [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.force-minor }}" == "true" || "${LAST_MSG:l}" == *"[push up]"* ]] && TYPE=minor
-          { (( PR_SKIP )) || [[ "${LAST_MSG:l}" == *"[skip up]"* || "${LAST_AUTHOR:l}" == *"[bot]"* ]]; } && TYPE=skip
-          [[ "${{ github.event_name }}" == "create" || "${{ inputs.force-major }}" == "true" || "${LAST_MSG:l}" == *"[force up]"* ]] && TYPE=major
-
-          printf '::notice title=Increment Type::%s\n' "$TYPE"
-          echo "type=$TYPE" > $GITHUB_OUTPUT
+        uses: Mimis-Gildi/fluffle/.github/actions/increment-find-type@main
+        with:
+          force-major: ${{ inputs.force-major }}
+          force-minor: ${{ inputs.force-minor }}
+          gh-token:    ${{ secrets.CI_PAT }}
 
       - name: Calculate and apply version
         id: version
