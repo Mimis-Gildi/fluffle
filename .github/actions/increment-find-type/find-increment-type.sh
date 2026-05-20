@@ -27,36 +27,14 @@ printf '## Increment Action — Invocation State
 | Force Action   | `%s` | Override |
 
 ' \
-  "$( [[ -n $GITHUB_TOKEN ]] && print '✓ set' || print '✗ unset' )" \
-  "$( [[ -n $GH_TOKEN ]] && print '✓ set' || print '✗ unset' )" \
+  "$( [[ -n $GITHUB_TOKEN ]] && print ' set' || print ' unset' )" \
+  "$( [[ -n $GH_TOKEN ]] && print ' set' || print ' unset' )" \
   $BRANCH \
   ${LAST_MSG//|/\\|} \
   $LAST_AUTHOR $ACTOR \
   $EVENT_NAME ${EVENT_ACTION:-—} \
   $REF ${HEAD_REF:-—} ${FORCE_ACTION:-none} \
   >> $GITHUB_STEP_SUMMARY
-
-printf 'Action State on Invocation:
-
-      GITHUB_TOKEN : %s \t# Agent supplied fallback
-          GH_TOKEN : %s \t# Workflow supplied value
-            BRANCH : %s \t# Calculated branch
-      Last Message : %s
-       Last Author : %s
-             ACTOR : %s
-        EVENT_NAME : %s
-      EVENT_ACTION : %s
-               REF : %s \t# Action source pointer
-          HEAD_REF : %s \t# Pull request source branch
-
-       FORCE_ACTION : %s
-\n\n' \
-  "$( [[ -n $GITHUB_TOKEN ]] && print 'Token is set' || print 'Token is NOT set' )" \
-  "$( [[ -n $GH_TOKEN ]] && print 'Token is set' || print 'Token is NOT set' )" \
-  $BRANCH \
-  $LAST_MSG $LAST_AUTHOR $ACTOR \
-  $EVENT_NAME ${EVENT_ACTION:-Not provisioned} \
-  $REF ${HEAD_REF:-Not provisioned} ${FORCE_ACTION:-none}
 
 [[ $EVENT_NAME == workflow_dispatch ]] && {
   case $FORCE_ACTION in
