@@ -10,6 +10,32 @@ readonly LAST_MSG=$(git log -1 --format='%s')
 readonly LAST_AUTHOR=$(git log -1 --format='%an')
 readonly BRANCH=$(git branch --show-current)
 
+printf '## Increment Action — Invocation State
+
+| Field | Value | Note |
+|---|---|---|
+| `GITHUB_TOKEN` | %s | Agent fallback |
+| `GH_TOKEN`     | %s | Workflow supplied |
+| Branch         | `%s` | Calculated |
+| Last Message   | %s | |
+| Last Author    | %s | |
+| Actor          | %s | |
+| Event          | `%s` | |
+| Event Action   | %s | |
+| Ref            | `%s` | Action source |
+| Head Ref       | %s | PR source branch |
+| Force Action   | `%s` | Override |
+
+' \
+  "$( [[ -n $GITHUB_TOKEN ]] && print '✓ set' || print '✗ unset' )" \
+  "$( [[ -n $GH_TOKEN ]] && print '✓ set' || print '✗ unset' )" \
+  $BRANCH \
+  ${LAST_MSG//|/\\|} \
+  $LAST_AUTHOR $ACTOR \
+  $EVENT_NAME ${EVENT_ACTION:-—} \
+  $REF ${HEAD_REF:-—} ${FORCE_ACTION:-none} \
+  >> $GITHUB_STEP_SUMMARY
+
 printf 'Action State on Invocation:
 
       GITHUB_TOKEN : %s \t# Agent supplied fallback
