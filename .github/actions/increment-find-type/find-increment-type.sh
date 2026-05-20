@@ -1,55 +1,142 @@
 #!/usr/bin/env zsh
 
+readonly ACTIONS=(fail skip patch minor major)
+readonly DEFAULT_ACTION=$ACTIONS[2]
+readonly DEFAULT_INC=$ACTIONS[3]
+
+printf "type=%s\n" $DEFAULT_ACTION > $GITHUB_OUTPUT
+
 readonly LAST_MSG=$(git log -1 --format='%s')
 readonly LAST_AUTHOR=$(git log -1 --format='%an')
+readonly BRANCH=$(git branch --show-current)
 
-printf 'Git state:\n\t author=%s\n\t message=%s\n\n' $LAST_AUTHOR $LAST_MSG
+printf 'Action State on Invocation:
 
-printf 'Tokens:\n\t GITHUB_TOKEN=%s\n\t GH_TOKEN=%s\n\n' \
+      GITHUB_TOKEN : %s \t# Agent supplied fallback
+          GH_TOKEN : %s \t# Workflow supplied value
+            BRANCH : %s \t# Calculated branch
+      Last Message : %s
+       Last Author : %s
+             ACTOR : %s
+        EVENT_NAME : %s
+      EVENT_ACTION : %s
+               REF : %s \t# Action source pointer
+          HEAD_REF : %s \t# Pull request source branch
+
+       FORCE_ACTION : %s
+\n\n' \
   "$( [[ -n $GITHUB_TOKEN ]] && print 'Token is set' || print 'Token is NOT set' )" \
-  "$( [[ -n $GH_TOKEN ]] && print 'Token is set' || print 'Token is NOT set' )"
+  "$( [[ -n $GH_TOKEN ]] && print 'Token is set' || print 'Token is NOT set' )" \
+  $BRANCH \
+  $LAST_MSG $LAST_AUTHOR $ACTOR \
+  $EVENT_NAME ${EVENT_ACTION:-Not provisioned} \
+  $REF ${HEAD_REF:-Not provisioned} ${FORCE_ACTION:-none}
 
-[[ -n $GH_TOKEN ]] || {
-  printf '::error title=Token::GH_TOKEN is empty. gh-token input did not resolve -- check secret wiring in the caller workflow.\n'
-  exit 1
+[[ $EVENT_NAME == workflow_dispatch ]] && {
+  case $FORCE_ACTION in
+    major)
+      printf '::notice title=Major-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    minor)
+      printf '::notice title=Minor-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    patch)
+      printf '::notice title=Patch-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$DEFAULT_INC" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    skip)
+      printf '::notice title=SKIP-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$DEFAULT_ACTION" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    fail)
+      printf '::notice title=FAIL-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[1]" > $GITHUB_OUTPUT
+      exit 1
+      ;;
+    *)
+      printf '::error title=Impossible FAIL::Invalid action selection!
+      event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[1]" > $GITHUB_OUTPUT
+      exit 1
+      ;;
+  esac
 }
 
-# Decompose PR_SKIP into its two drivers.
-PR_OUT=$(gh pr view --json number --jq '.number' >&1) && IN_PR=1 || {
-  [[ $PR_OUT == *'no pull requests found'* ]] && IN_PR=0 || {
-    printf '::error title=PR Check::%s\n' $PR_OUT
+[[ $EVENT_NAME == create ]] && {
+    print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
+    printf '::notice title=Major-Create::event=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
+    $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+    exit 0
+}
+
+[[ ${LAST_AUTHOR:l} == *'[bot]'* ]] && {
+  printf '::error title=Bot-Ignored::Ignoring all bot operations.
+  With event=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
+  $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+  exit 0
+}
+
+[[ ${LAST_MSG:l} == *'[skip up]'* ]] && {
+  print '::warning title=SKIP::User requested skip acknowledged.'
+  exit 0
+}
+
+[[ $EVENT_NAME == push ]] && {
+  OPEN_PR_EXISTS=$(gh pr list --head ${REF#refs/heads/} --state open --json number --jq 'any') || {
+    print '::error title=PR Check Failed::Crashing workflow because the check for open PRs failed.'
+    print "type=$ACTIONS[1]" > $GITHUB_OUTPUT
     exit 1
   }
+  [[ $OPEN_PR_EXISTS == true ]] && {
+    print '::notice title=Yielding to PR Synchronize::Open PRs exist and incrementing is yielding to PR events and not Push events.'
+    exit 0
+  }
+
+  case ${LAST_MSG:l} in
+    *'[force up]'*)
+      printf '::notice title=Minor-Forced-Push::Major increment on push is forbidden: event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    *'[push up]'*)
+      printf '::notice title=Minor-Push::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+    *)
+      printf '::notice title=Patch-Default::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+      print "type=$DEFAULT_INC" > $GITHUB_OUTPUT
+      exit 0
+      ;;
+  esac
 }
-[[ $EVENT_NAME == push ]] && IN_PUSH=1 || IN_PUSH=0
-(( IN_PR && IN_PUSH )) && PR_SKIP=1 || PR_SKIP=0
 
-BRANCH=$(git branch --show-current >&1)
-printf 'PR check:\n\t branch=%1$s\n\t head_ref=%2$s\n\t ref=%3$s\n\t gh_pr_view=%4$s\n\t IN_PR=%5$s\n\n' \
-  $BRANCH ${HEAD_REF:- } $REF $PR_OUT $IN_PR
-
-# Extract commit message signals.
-[[ ${LAST_MSG:l}    == *'[push up]'*  ]] && MSG_MINOR=1 || MSG_MINOR=0
-[[ ${LAST_MSG:l}    == *'[force up]'* ]] && MSG_MAJOR=1 || MSG_MAJOR=0
-[[ ${LAST_MSG:l}    == *'[skip up]'*  ]] && MSG_SKIP=1  || MSG_SKIP=0
-[[ ${LAST_AUTHOR:l} == *'[bot]'*      ]] && IS_BOT=1    || IS_BOT=0
-
-# Trace all driving values.
-printf '::notice title=Selector State::event=%1$s; action=%2$s; IN_PR=%3$s; IN_PUSH=%4$s; PR_SKIP=%5$s; MSG_MINOR=%6$s; MSG_MAJOR=%7$s; MSG_SKIP=%8$s; IS_BOT=%9$s; force_major=%10$s; force_minor=%11$s; author=%12$s; msg=%13$s\n' \
-  $EVENT_NAME ${EVENT_ACTION:- } $IN_PR $IN_PUSH $PR_SKIP $MSG_MINOR $MSG_MAJOR $MSG_SKIP $IS_BOT $FORCE_MAJOR $FORCE_MINOR $LAST_AUTHOR $LAST_MSG
-
-# Boundary check: trigger filters exclude renovate/** and dependabot/**, so a bot-triggered create reaching us means the filter is broken upstream.
-[[ $EVENT_NAME == create && $ACTOR == *'[bot]'* ]] && {
-  printf '::error title=Trigger Filter::Bot %s triggered create -- should be excluded by branches filter. Fix the filter, not the selector.\n' \
-  $ACTOR
-  exit 1
-}
-
-# Determine increment type -- order = priority, low first, terminal rules last.
-TYPE=patch
-[[ $EVENT_NAME == pull_request || $FORCE_MINOR == true || ${LAST_MSG:l} == *'[push up]'*  ]] && TYPE=minor
-{ (( PR_SKIP )) || [[ ${LAST_MSG:l} == *'[skip up]'* || ${LAST_AUTHOR:l} == *'[bot]'* ]]; } && TYPE=skip
-[[ $EVENT_NAME == create       || $FORCE_MAJOR == true || ${LAST_MSG:l} == *'[force up]'* ]] && TYPE=major
-
-printf '::notice title=Increment Type::%s\n' $TYPE
-print -- "type=$TYPE" > $GITHUB_OUTPUT
+case ${LAST_MSG:l} in
+  *'[force up]'*)
+    printf '::notice title=Forced-Major::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+      $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+    print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
+    exit 0
+    ;;
+  *)
+    printf '::notice title=Minor-Default::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+      $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+    print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
+    exit 0
+    ;;
+esac

@@ -6,14 +6,10 @@ branding:
   color: "green"
 
 inputs:
-  force-major:
-    description: "Force major increment regardless of signals."
+  force-action:
+    description: "Force increment type (patch/minor/major/skip/fail). Default is patch."
     required: false
-    default: "false"
-  force-minor:
-    description: "Force minor increment regardless of signals. force-major wins if both."
-    required: false
-    default: "false"
+    default: "patch"
   gh-token:
     description: "Token with PR read scope (e.g., secrets.CI_PAT). Required for the PR-state probe."
     required: true
@@ -31,12 +27,11 @@ runs:
     - id: find-increment-type
       shell: zsh -l {0}
       env:
-        EVENT_NAME:   ${{ github.event_name }}
-        EVENT_ACTION: ${{ github.event.action }}
-        ACTOR:        ${{ github.actor }}
-        HEAD_REF:     ${{ github.head_ref }}
-        REF:          ${{ github.ref }}
-        FORCE_MAJOR:  ${{ inputs.force-major }}
-        FORCE_MINOR:  ${{ inputs.force-minor }}
-        GH_TOKEN:     ${{ inputs.gh-token }}
+        EVENT_NAME:       ${{ github.event_name }}
+        EVENT_ACTION:     ${{ github.event.action }}
+        ACTOR:            ${{ github.actor }}
+        HEAD_REF:         ${{ github.head_ref }}
+        REF:              ${{ github.ref }}
+        FORCE_ACTION:     ${{ inputs.force-action }}
+        GH_TOKEN:         ${{ inputs.gh-token }}
       run: ${{ github.action_path }}/find-increment-type.sh

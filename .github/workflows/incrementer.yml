@@ -4,7 +4,6 @@ run-name: "Incremented Version on ${{ github.repository }} by ${{ github.actor }
 on:
   push:
     branches-ignore:
-      - main
       - release
       - 'releases/**'
       - 'renovate/**'
@@ -25,28 +24,24 @@ on:
       - reopened
   workflow_dispatch:
     inputs:
-      force-major:
+      force-action:
         required: false
-        type: boolean
-        default: false
-        description: 'Should a global major increment be pushed?'
-      force-minor:
-        required: false
-        type: boolean
-        default: false
-        description: 'Should a PR increment be forced? force-major trumps this.'
+        type: choice
+        options:
+          - skip
+          - patch
+          - minor
+          - major
+          - fail
+        default: patch
+        description: 'Force increment type. Default is patch.'
   workflow_call:
     inputs:
-      force-major:
+      force-action:
         required: false
-        type: boolean
-        default: false
-        description: 'Should a global major increment be pushed'
-      force-minor:
-        required: false
-        type: boolean
-        default: false
-        description: 'Should a PR increment be forced? force-major trumps this.'
+        type: string
+        default: patch
+        description: 'Force increment type (skip/patch/minor/major/fail). Default is patch.'
     outputs:
       type:
         value: ${{ jobs.increment.outputs.type }}
@@ -54,6 +49,8 @@ on:
         value: ${{ jobs.increment.outputs.old }}
       new:
         value: ${{ jobs.increment.outputs.new }}
+      sha:
+        value: ${{ jobs.increment.outputs.sha }}
 
 defaults:
   run:
@@ -75,6 +72,7 @@ jobs:
       type: ${{ steps.operation.outputs.type }}
       old: ${{ steps.version.outputs.old }}
       new: ${{ steps.version.outputs.new }}
+      sha: ${{ steps.push_commits.outputs.sha }}
 
     steps:
 
@@ -91,8 +89,7 @@ jobs:
         id: operation
         uses: Mimis-Gildi/fluffle/.github/actions/increment-find-type@main
         with:
-          force-major: ${{ inputs.force-major }}
-          force-minor: ${{ inputs.force-minor }}
+          force-action: ${{ inputs.force-action }}
           gh-token:    ${{ secrets.CI_PAT }}
 
       - name: Calculate and apply version
@@ -128,6 +125,7 @@ jobs:
           echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit and push
+        id: push_commits
         if: steps.version.outputs.new != ''
         env:
           GH_TOKEN: ${{ secrets.CI_PAT }}
@@ -144,6 +142,7 @@ jobs:
           TYPE=${{ steps.operation.outputs.type }}
           git commit -m "${(C)TYPE} ${{ steps.version.outputs.old }} -> ${{ steps.version.outputs.new }} [skip up]"
           git push
+          print "sha=$(git rev-parse HEAD)" > $GITHUB_OUTPUT
 
   summarize:
     needs: increment
