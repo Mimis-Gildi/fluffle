@@ -79,9 +79,18 @@ printf '## Increment Action — Invocation State
 }
 
 [[ $EVENT_NAME == create ]] && {
+    [[ $REF_TYPE != branch ]] && {
+        printf '::notice title=Skip-Create-NonBranch::ref_type=%s\n' ${REF_TYPE:-unset}
+        exit 0
+    }
+    BRANCH_NAME=${REF#refs/heads/}
+    [[ $BRANCH_NAME =~ ^[0-9]+- ]] || {
+        printf '::notice title=Skip-Create-NonFeature::branch=%s\n' $BRANCH_NAME
+        exit 0
+    }
     print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
-    printf '::notice title=Major-Create::event=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
-    $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+    printf '::notice title=Major-Create::event=%s, branch=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
+    $EVENT_NAME $BRANCH_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
     exit 0
 }
 

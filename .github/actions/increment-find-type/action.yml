@@ -32,6 +32,7 @@ runs:
         ACTOR:            ${{ github.actor }}
         HEAD_REF:         ${{ github.head_ref }}
         REF:              ${{ github.ref }}
+        REF_TYPE:         ${{ github.event.ref_type }}
         FORCE_ACTION:     ${{ inputs.force-action }}
         GH_TOKEN:         ${{ inputs.gh-token }}
       run: ${{ github.action_path }}/find-increment-type.sh
