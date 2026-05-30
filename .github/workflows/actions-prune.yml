@@ -87,4 +87,3 @@ jobs:
           keep-last: ${{ env.PRUNE_KEEP_LAST }}
           stale-minutes: ${{ env.PRUNE_STALE_MINUTES }}
           dry-run: ${{ env.PRUNE_DRY_RUN }}
-

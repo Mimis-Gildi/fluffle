@@ -16,7 +16,7 @@ inputs:
 
 outputs:
   type:
-    description: "Increment type: patch, minor, major, or skip."
+    description: "Increment type: patch, minor, major, skip, or fail."
     value: ${{ steps.find-increment-type.outputs.type }}
 
 runs:
