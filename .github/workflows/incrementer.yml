@@ -40,6 +40,12 @@ on:
         type: string
         default: patch
         description: 'Force increment type (skip/patch/minor/major/fail). Default is patch.'
+    secrets:
+      CI_PAT:
+        required: false
+        description: >-
+          CI override token for alternative execution of this workflow;
+          such as when extended for additional edits and parameter changes.
     outputs:
       type:
         value: ${{ jobs.increment.outputs.type }}
@@ -88,7 +94,7 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/increment-find-type@main
         with:
           force-action: ${{ inputs.force-action }}
-          gh-token:    ${{ secrets.CI_PAT }}
+#          gh-token:    ${{ secrets.CI_PAT || github.token }}
 
       - name: Calculate and apply version
         id: version
@@ -126,7 +132,7 @@ jobs:
         id: push_commits
         if: steps.version.outputs.new != ''
         env:
-          GH_TOKEN: ${{ secrets.CI_PAT }}
+          GH_TOKEN: ${{ secrets.CI_PAT || github.token }}
 
         run: |
           git config user.name "R!dd13r"

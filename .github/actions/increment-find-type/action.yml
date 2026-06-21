@@ -11,8 +11,8 @@ inputs:
     required: false
     default: "patch"
   gh-token:
-    description: "Token with PR read scope (e.g., secrets.CI_PAT). Required for the PR-state probe."
-    required: true
+    description: "Token with PR read scope (e.g., secrets.CI_PAT). Falls back to github.token when empty."
+    required: false
 
 outputs:
   type:
@@ -34,5 +34,5 @@ runs:
         REF:              ${{ github.ref }}
         REF_TYPE:         ${{ github.event.ref_type }}
         FORCE_ACTION:     ${{ inputs.force-action }}
-        GH_TOKEN:         ${{ inputs.gh-token }}
+        GH_TOKEN:         ${{ inputs.gh-token || github.token }}
       run: ${{ github.action_path }}/find-increment-type.sh

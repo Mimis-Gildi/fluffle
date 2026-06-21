@@ -1,2 +1,0 @@
-# Team's share inbox
-
