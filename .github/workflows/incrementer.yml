@@ -41,7 +41,7 @@ on:
         default: patch
         description: 'Force increment type (skip/patch/minor/major/fail). Default is patch.'
     secrets:
-      CI_PAT:
+      CI_PAT_IN:
         required: false
         description: >-
           CI override token for alternative execution of this workflow;
@@ -94,7 +94,6 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/increment-find-type@main
         with:
           force-action: ${{ inputs.force-action }}
-#          gh-token:    ${{ secrets.CI_PAT || github.token }}
 
       - name: Calculate and apply version
         id: version
@@ -132,7 +131,7 @@ jobs:
         id: push_commits
         if: steps.version.outputs.new != ''
         env:
-          GH_TOKEN: ${{ secrets.CI_PAT || github.token }}
+          GH_TOKEN: ${{ secrets.CI_PAT || secrets.CI_PAT_IN || github.token }}
 
         run: |
           git config user.name "R!dd13r"
@@ -157,14 +156,42 @@ jobs:
     steps:
 
       - name: Summary
+        env:
+          # Computed at the expression layer: tests presence only, never exposes a secret value.
+          USED_CI_SECRET: ${{ secrets.CI_PAT    != '' && 'present' || 'absent'  }}
+          USED_CI_PASSED: ${{ secrets.CI_PAT_IN != '' && 'passed'  || 'absent'  }}
         run: |
-          TYPE="${{ needs.increment.outputs.type }}"
-          OLD="${{ needs.increment.outputs.old }}"
-          NEW="${{ needs.increment.outputs.new }}"
-          {
-            echo "## Version Increment Summary"
-            echo ""
-            echo "| Type | Version | Branch |"
-            echo "|------|---------|--------|"
-            [[ -n "$NEW" ]] && echo "| $TYPE | $OLD -> $NEW | ${GITHUB_REF#refs/heads/} |" || echo "| $TYPE | unchanged | ${GITHUB_REF#refs/heads/} |"
-          } >> $GITHUB_STEP_SUMMARY
+          TYPE=${{ needs.increment.outputs.type }}
+          OLD=${{ needs.increment.outputs.old }}
+          NEW=${{ needs.increment.outputs.new }}
+          BRANCH=${GITHUB_REF#refs/heads/}
+          [[ -n "$NEW" ]] && ROW="| $TYPE | $OLD -> $NEW | $BRANCH |" || ROW="| $TYPE | unchanged | $BRANCH |"
+          printf '## Version Increment Summary
+
+          | Type | Version | Branch |
+          |------|---------|--------|
+          %s
+          ' "$ROW" >> $GITHUB_STEP_SUMMARY
+
+          printf '
+          ### Token & context diagnostics
+          USED_GH_TOKEN=$( [[ -n $GITHUB_TOKEN ]] && print ' set' || print ' unset' )
+          USED_GITHUB_TOKEN=$( [[ -n $GH_TOKEN ]] && print ' set' || print ' unset' )
+
+          | Field                     | Value |
+          |---------------------------|-------|
+          | CI Local                  | %s    |
+          | CI Passed                 | %s    |
+          | GH CLI in Environment     | %s    |
+          | GITHUB in Environment     | %s    |
+          | RUNNER_NAME               | %s    |
+          | GITHUB_ACTION             | %s    |
+          | GITHUB_ACTION_PATH        | %s    |
+          | GITHUB_ACTION_REPO        | %s    |
+          | GITHUB_ACTOR              | %s    |
+          | GITHUB_JOB                | %s    |
+          ' "$USED_CI_SECRET" "$USED_CI_PASSED" \
+            "$USED_GH_TOKEN" "$USED_GITHUB_TOKEN" \
+            "$RUNNER_NAME" "$GITHUB_ACTION" \ 
+            "$GITHUB_ACTION_PATH" "$GITHUB_ACTION_REPOSITORY" \
+            "$GITHUB_ACTOR" "$GITHUB_JOB" >> $GITHUB_STEP_SUMMARY
