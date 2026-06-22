@@ -175,8 +175,8 @@ jobs:
 
           printf '
           ### Token & context diagnostics
-          USED_GH_TOKEN=$( [[ -n $GITHUB_TOKEN ]] && print ' set' || print ' unset' )
-          USED_GITHUB_TOKEN=$( [[ -n $GH_TOKEN ]] && print ' set' || print ' unset' )
+          USED_GH_TOKEN="$( [[ -n $GITHUB_TOKEN ]] && print ' set' || print ' unset' )"
+          USED_GITHUB_TOKEN="$( [[ -n $GH_TOKEN ]] && print ' set' || print ' unset' )"
 
           | Field                     | Value |
           |---------------------------|-------|
