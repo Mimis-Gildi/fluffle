@@ -160,14 +160,12 @@ class CachePipeline:
         all_raw_caches: list[dict] = []
         page_number = 1
         while True:
-            api_url = f"repos/{self.repository}/actions/caches?per_page=100&page={page_number}"
+            gh_args = ["gh", "api", f"repos/{self.repository}/actions/caches",
+                       "-f", "per_page=100", "-f", f"page={page_number}"]
             if self.branch != "main":
-                api_url += f"&ref=refs/heads/{self.branch}"
+                gh_args += ["-f", f"ref=refs/heads/{self.branch}"]
 
-            gh_result = subprocess.run(
-                ["gh", "api", api_url],
-                capture_output=True, text=True
-            )
+            gh_result = subprocess.run(gh_args, capture_output=True, text=True)
             if gh_result.returncode != 0:
                 print(f"::error title=Fetch Failed::{gh_result.stderr.strip()}", file=sys.stderr)
                 sys.exit(1)

@@ -60,11 +60,6 @@ defaults:
   run:
     shell: zsh -l {0}
 
-# Example for caller.
-#concurrency:
-#  group: fluffle-incrementer-${{ github.head_ref || github.ref }}
-#  cancel-in-progress: true
-
 jobs:
 
   increment:
