@@ -160,7 +160,7 @@ class CachePipeline:
         all_raw_caches: list[dict] = []
         page_number = 1
         while True:
-            gh_args = ["gh", "api", f"repos/{self.repository}/actions/caches",
+            gh_args = ["gh", "api", "--method", "GET", f"repos/{self.repository}/actions/caches",
                        "-f", "per_page=100", "-f", f"page={page_number}"]
             if self.branch != "main":
                 gh_args += ["-f", f"ref=refs/heads/{self.branch}"]
