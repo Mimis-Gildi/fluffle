@@ -41,7 +41,7 @@ jobs:
     steps:
 
       - name: "Checkout to check for labeler config"
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v5.0.1
         with:
           sparse-checkout: .github
 

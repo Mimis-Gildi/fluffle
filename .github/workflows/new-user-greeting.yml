@@ -48,7 +48,7 @@ jobs:
     steps:
 
       - name: "Checkout for community content"
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v5.0.1
         with:
           sparse-checkout: .github/messages
 
