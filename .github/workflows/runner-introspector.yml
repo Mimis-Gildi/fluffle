@@ -91,7 +91,7 @@ jobs:
 
       - name: Upgrade Conda
         id: conda-upgrade
-        if: steps.conda.outputs.failed == 'true'
+#        if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 
   ruby-job:
