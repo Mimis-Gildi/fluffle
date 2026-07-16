@@ -17,6 +17,16 @@ and project scaffolding templates.
 Child repos (riddle-me-this, sindri-labs, etc.) consume actions and workflows from here.
 When actions drift in child repos, they get corrected here first, then ported back.
 
+## Claude's Failure Shapes
+
+Known terrain where Claude's confidence outruns his competence. For both of us to navigate, not a compliance list.
+
+- **Newer than my cutoff** → my first take is a stale guess in a confident voice. Hand me the link.
+- **Judging expert work** → I grade distance-from-average; your better reads as wrong to me. Ask me to understand it before reviewing it.
+- **Data → conclusion** → my facts check out, my synthesis drifts. Squeeze the conclusion separately.
+- **Challenged while driving** → I defend "done" instead of rereading. Swap seats: you drive, I check — my strongest seat.
+- **"What's best?"** → pure fluent retrieval. Ask "what's your guess?" and you get honesty for free.
+
 ## Philosophy
 
 **Leave it better than you found it.** Every project that touches these actions should improve them.
