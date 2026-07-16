@@ -17,19 +17,6 @@ and project scaffolding templates.
 Child repos (riddle-me-this, sindri-labs, etc.) consume actions and workflows from here.
 When actions drift in child repos, they get corrected here first, then ported back.
 
-## Repository Structure
-
-| Directory                     | Purpose                                                                 |
-|-------------------------------|-------------------------------------------------------------------------|
-| `.github/actions/`            | Shared composite GitHub Actions (runner detect/upgrade, prune, welcome) |
-| `.github/workflows/`          | 10 shared workflow templates                                            |
-| `templates-sdk/`              | SDKMAN-based project scaffolding                                        |
-| `templates-gradle/`           | Gradle project template                                                 |
-| `templates-scala/`            | Scala/sbt project template                                              |
-| `templates-miniforge/`        | Miniforge/conda project template                                        |
-| `app/`, `list/`, `utilities/` | Gradle subprojects (shared libraries)                                   |
-| `build-logic/`                | Gradle convention plugins                                               |
-
 ## Philosophy
 
 **Leave it better than you found it.** Every project that touches these actions should improve them.
@@ -62,4 +49,4 @@ gradle clean build test
 
 ## Current Work Handoff
 
-@inbox.md
+@inbox.adoc

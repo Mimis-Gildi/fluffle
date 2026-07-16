@@ -1,5 +1,3 @@
-val useJavaVersion: String by project
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     application
@@ -11,7 +9,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(useJavaVersion))
+        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get()))
     }
 }
 

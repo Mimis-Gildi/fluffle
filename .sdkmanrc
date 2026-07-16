@@ -1,7 +1,7 @@
-java=21.0.11-tem
-kotlin=2.4.0
-scala=3.8.4
-maven=3.9.16
 gradle=9.6.1
-sbt=2.0.1
+java=21.0.11-tem
 kobweb=0.9.21
+kotlin=2.4.10
+maven=3.9.16
+sbt=2.0.2
+scala=3.8.4
