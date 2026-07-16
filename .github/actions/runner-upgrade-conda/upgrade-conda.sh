@@ -58,5 +58,5 @@ printf $summary \
 "$(python --version)" \
 "$(conda info)" \
 "$(mamba info)" \
-$since \
-$changes > $GITHUB_STEP_SUMMARY
+"$since" \
+"$changes" > $GITHUB_STEP_SUMMARY
