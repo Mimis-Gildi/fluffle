@@ -73,7 +73,7 @@ jobs:
   conda-job:
     needs: canary-flight-job
     runs-on: [ self-hosted, peep ]
-    timeout-minutes: 33
+    timeout-minutes: 53
     outputs:
       failed: ${{ steps.conda.outputs.failed }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
@@ -82,6 +82,7 @@ jobs:
 
       - name: Introspect Conda
         id: conda
+        timeout-minutes: 7
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
           conda-version: '26.5.3'
@@ -90,6 +91,7 @@ jobs:
 
       - name: Upgrade Conda
         id: conda-upgrade
+        timeout-minutes: 44
 #        if: steps.conda.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
 

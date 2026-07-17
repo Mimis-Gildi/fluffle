@@ -38,15 +38,32 @@ conda upgrade -y mamba
 conda upgrade -y --all
 conda clean -y -a
 
-conda activate ml
-conda config --append channels conda-pypi
+conda activate ml || exit 11
 
-conda upgrade -y python
-conda install -y conda-pypi pydantic pyfunctional \
-diagrams pyyaml pytest requests fastapi jproperties  \
-numpy pandas scikit-learn matplotlib seaborn pytorch \
-xgboost lightgbm shap imbalanced-learn optuna plotly tabulate
+print "\n Upgrade Python first to rebalance dependency tree."
+conda upgrade -yv python
+
+print "\n Force dependencies: conda pypi."
+conda config --append channels conda-pypi
+conda install -yvv conda-pypi
+
+print "\n Force general dependencies: pydantic pyfunctional pyyaml pytest requests fastapi jproperties."
+conda install -yvv pydantic pyfunctional pyyaml pytest requests fastapi jproperties
+
+print "\n Force data science dependencies: numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna."
+conda install -yvv numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna
+
+print "\n Force Keras superstructure: keras."
+conda env config vars set KERAS_BACKEND=torch -n ml
+conda install -yvv keras
+
+print "\n Add graphing and presentation utilities: diagrams matplotlib seaborn plotly tabulate."
+conda install -yvv diagrams matplotlib seaborn plotly tabulate
+
+print "\n Upgrade proof-pass."
 conda upgrade -y --all
+
+print "\n Mandatory cleanout."
 conda clean -y -a
 
 readonly since=$(date -d '-1 hour' '+%F %T')
