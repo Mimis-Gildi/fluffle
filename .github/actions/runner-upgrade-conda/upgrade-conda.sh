@@ -32,33 +32,35 @@ print 'upgraded=false' > $GITHUB_OUTPUT
 readonly activation=${0:A:h}/conda-activate.sh
 [[ -s $activation ]] && source $activation
 
+print "\n ============ BASE environment.   ============\n"
 conda upgrade -y python
 conda upgrade -y conda
 conda upgrade -y mamba
 conda upgrade -y --all
 conda clean -y -a
 
+print "\n ============ ML environment.     ============\n"
 conda activate ml || exit 11
 
 print "\n Upgrade Python first to rebalance dependency tree."
-conda upgrade -yv python
+conda upgrade -y python
 
 print "\n Force dependencies: conda pypi."
 conda config --append channels conda-pypi
-conda install -yvv conda-pypi
+conda install -y conda-pypi
 
 print "\n Force general dependencies: pydantic pyfunctional pyyaml pytest requests fastapi jproperties."
-conda install -yvv pydantic pyfunctional pyyaml pytest requests fastapi jproperties
+conda install -y pydantic pyfunctional pyyaml pytest requests fastapi jproperties
 
 print "\n Force data science dependencies: numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna."
-conda install -yvv numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna
+conda install -y numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna
 
 print "\n Force Keras superstructure: keras."
 conda env config vars set KERAS_BACKEND=torch -n ml
-conda install -yvv keras
+conda install -y keras
 
 print "\n Add graphing and presentation utilities: diagrams matplotlib seaborn plotly tabulate."
-conda install -yvv diagrams matplotlib seaborn plotly tabulate
+conda install -y diagrams matplotlib seaborn plotly tabulate
 
 print "\n Upgrade proof-pass."
 conda upgrade -y --all
