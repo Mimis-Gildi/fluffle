@@ -57,4 +57,4 @@ jobs:
 
       - name: "Label Pull Request pushing labels to GitHub Pull Request"
         if: steps.config-check.outputs.found == 'true'
-        uses: actions/labeler@v6.2.0
+        uses: actions/labeler@v7.0.0
