@@ -1,0 +1,15 @@
+# rdd13r 20241007
+#
+
+export MANPATH="/usr/local/man:$MANPATH"
+export LANG=en_US.UTF-8
+export ARCHFLAGS="-arch $(uname -m)"
+
+export GEM_HOME="$HOME/.local/share/gem/ruby/3.3.0"
+export GEM_PATH="$GEM_HOME"
+
+export SDKMAN_DIR="$HOME/.sdkman"
+export SDKMAN_BIN="$SDKMAN_DIR/bin"
+export SDKMAN_INIT="$SDKMAN_BIN/sdkman-init.sh"
+
+export PATH="$GEM_PATH/bin:$HOME/bin:$PATH"

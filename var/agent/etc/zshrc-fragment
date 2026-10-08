@@ -1,0 +1,19 @@
+# Previous contents above - the .zshrc
+#
+# IMPORTANT!! This is ALL after sourcing $ZSH/oh-my-zsh.sh
+# plugins=(git sdk sudo)
+#
+# source $ZSH/oh-my-zsh.sh
+#
+
+# Agent configuration
+# See .zshenv
+
+# Aliases
+source .zshrc-aliases
+
+# Conda
+source .zshrc-conda
+
+#SDK
+source .zshrc-sdk

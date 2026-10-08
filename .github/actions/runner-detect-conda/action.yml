@@ -20,6 +20,9 @@ outputs:
   failed:
     description: "true if any version is behind floor"
     value: ${{ steps.detect.outputs.failed }}
+  hosed:
+    description: "true if conda is broken or off desired state; blow away and install clean"
+    value: ${{ steps.detect.outputs.hosed }}
 
 runs:
   using: "composite"

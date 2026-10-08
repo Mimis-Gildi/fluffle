@@ -1,0 +1,1 @@
+[[ -s "$SDKMAN_INIT" ]] && source "$SDKMAN_INIT"

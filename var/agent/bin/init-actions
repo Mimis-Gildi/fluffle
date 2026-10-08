@@ -1,0 +1,18 @@
+#!/usr/bin/env zsh
+# rdd13r 20241007
+#
+
+source ${HOME}/.zprofile
+source ${HOME}/.zshenv
+source ${HOME}/.zshrc
+
+sdk selfupdate
+sdk update
+sdk upgrade
+sdk install java
+sdk install kotlin
+sdk install scala
+sdk install gradle
+sdk install sbt
+sdk install maven
+sdk c

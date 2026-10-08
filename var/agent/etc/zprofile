@@ -1,0 +1,4 @@
+# rdd13r 20241007
+#
+
+export RDD_AGENT_DI="some logical id"
