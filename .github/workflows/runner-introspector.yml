@@ -76,6 +76,7 @@ jobs:
     timeout-minutes: 53
     outputs:
       failed: ${{ steps.conda-probe.outputs.failed }}
+      hosed: ${{ steps.conda-probe.outputs.hosed }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
       installed: ${{ steps.conda-install.outputs.installed }}
 
@@ -180,7 +181,7 @@ jobs:
             echo "| Component | Status | Action |"
             echo "|-----------|--------|--------|"
             echo "| SDKMAN | ${{ needs.sdkman-job.outputs.failed == 'true' && 'X' || '' }} | ${{ needs.sdkman-job.outputs.upgraded == 'true' && 'upgraded' || '' }} |"
-            echo "| Conda | ${{ needs.conda-job.outputs.failed == 'true' && 'X' || '' }} | ${{ needs.conda-job.outputs.upgraded == 'true' && 'upgraded' || '' }} |"
+            echo "| Conda | ${{ needs.conda-job.outputs.hosed == 'true' && 'hosed' || needs.conda-job.outputs.failed == 'true' && 'X' || '' }} | ${{ needs.conda-job.outputs.installed == 'true' && 'installed' || needs.conda-job.outputs.upgraded == 'true' && 'upgraded' || '' }} |"
             echo "| Ruby | ${{ needs.ruby-job.outputs.failed == 'true' && 'X' || '' }} | |"
             echo "| Java | ${{ needs.java-manager-job.outputs.failed == 'true' && 'X' || '' }} | ${{ needs.java-manager-job.outputs.upgraded == 'true' && 'upgraded' || '' }} |"
             echo ""
