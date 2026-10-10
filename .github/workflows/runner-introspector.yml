@@ -77,7 +77,7 @@ jobs:
     outputs:
       failed: ${{ steps.conda.outputs.failed }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
-      installed: ${{ steps.conda-install.outputs.completed }}
+      installed: ${{ steps.conda-install.outputs.installed }}
 
     steps:
 
@@ -101,7 +101,7 @@ jobs:
         id: conda-install
         timeout-minutes: 44
         if: steps.conda-probe.outputs.hosed == 'true'
-        uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-install-conda@main
 
 
   ruby-job:

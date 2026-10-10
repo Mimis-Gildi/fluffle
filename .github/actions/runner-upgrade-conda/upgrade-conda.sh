@@ -1,81 +1,74 @@
 #!/usr/bin/env zsh
 
-readonly summary=$(<<'EOF'
-## Conda Upgrade
-
-Running %s
-
-### Conda `info`
-
-```text
-%s
-```
-
-### Mamba `info`
-
-```text
-%s
-```
-
-## Package updates since %s
-
-```text
-%s
-```
-
-
-EOF
-)
-
 print 'upgraded=false' > $GITHUB_OUTPUT
+
+violent() {
+  printf '::error title=Conda upgrade failed::%s\n' $1
+  exit 111
+}
+
+conda_info() {
+  local info
+  info=$(conda info) || violent "conda info failed at shell level ${CONDA_SHLVL:-none}"
+  printf '### %s: shell level %s, env %s\n\n```\n%s\n```\n\n' $1 ${CONDA_SHLVL:-none} ${CONDA_DEFAULT_ENV:-none} $info >> $GITHUB_STEP_SUMMARY
+}
+
+readonly conda_home=$HOME/miniforge3
 
 readonly activation=${0:A:h}/conda-activate.sh
 [[ -s $activation ]] && source $activation
+conda_info 'Conda after activation hook'
 
-print "\n ============ BASE environment.   ============\n"
-conda upgrade -y python
-conda upgrade -y conda
-conda upgrade -y mamba
-conda upgrade -y --all
-conda clean -y -a
+while (( CONDA_SHLVL > 1 )); do
+  conda deactivate || violent "conda deactivate failed at shell level $CONDA_SHLVL"
+  conda_info 'Conda deactivate'
+done
 
-print "\n ============ ML environment.     ============\n"
-conda activate ml || exit 11
+conda_info 'Conda base'
+base_info=$(conda info) || violent "conda info failed in base"
+readonly base_location=$(print -r -- $base_info | awk -F' : ' '/active env location/ { print $2 }')
+[[ $base_location == $conda_home ]] || violent "conda deactivate lands in ${base_location:-none}, expected $conda_home"
 
-print "\n Upgrade Python first to rebalance dependency tree."
-conda upgrade -y python
+channels=$(conda config --show channels) || violent "conda config --show channels failed"
+priority=$(conda config --show channel_priority) || violent "conda config --show channel_priority failed"
+readonly user_channels=($(print -r -- $channels | awk '/^ *- / && $2 !~ /^(conda-forge|defaults|conda-pypi)$/ { print $2 }'))
+readonly priority_mode=$(print -r -- $priority | awk '{ print $2 }')
 
-print "\n Force dependencies: conda pypi."
-conda config --append channels conda-pypi
-conda install -y conda-pypi
+[[ -n $(print -r -- $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
+  conda config --remove channels conda-pypi || violent "conda config --remove channels conda-pypi failed"
+  printf '::warning title=Conda channels drift::conda-pypi channel ripped out with vengeance!\n'
+  printf '### Conda channels: conda-pypi ripped out with vengeance!\n\n' >> $GITHUB_STEP_SUMMARY
+}
 
-print "\n Force general dependencies: pydantic pyfunctional pyyaml pytest requests fastapi jproperties."
-conda install -y pydantic pyfunctional pyyaml pytest requests fastapi jproperties
+[[ $priority_mode == strict ]] || {
+  conda config --set channel_priority strict || violent "conda config --set channel_priority strict failed"
+  printf '::warning title=Conda priority drift::channel_priority %s set to strict\n' ${priority_mode:-none}
+  printf '### Conda channels: channel_priority %s set to strict\n\n' ${priority_mode:-none} >> $GITHUB_STEP_SUMMARY
+}
 
-print "\n Force data science dependencies: numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna."
-conda install -y numpy pandas scikit-learn pytorch xgboost lightgbm shap imbalanced-learn optuna
+for channel in $user_channels; do
+  conda config --remove channels $channel || violent "conda config --remove channels $channel failed: not in user config"
+  conda config --append channels $channel || violent "conda config --append channels $channel failed"
+  printf '::warning title=Conda user channel::%s appended at lowest priority\n' $channel
+  printf '### Conda channels: user channel %s appended at lowest priority\n\n' $channel >> $GITHUB_STEP_SUMMARY
+done
 
-print "\n Force Keras superstructure: keras."
-conda env config vars set KERAS_BACKEND=torch -n ml
-conda install -y keras
+conda clean -y -a || violent "conda first clean failed"
+conda upgrade -y python || violent "conda python upgrade failed"
+conda upgrade -y conda || violent "conda conda upgrade failed"
+conda upgrade -y --all || violent "conda upgrade ALL failed"
+conda clean -y -a || violent "conda base final clean failed"
 
-print "\n Add graphing and presentation utilities: diagrams matplotlib seaborn plotly tabulate."
-conda install -y diagrams matplotlib seaborn plotly tabulate
+conda activate ml || violent "conda activate ml failed"
+conda_info 'Conda ml'
+ml_info=$(conda info) || violent "conda info failed in ml"
+readonly ml_location=$(print -r -- $ml_info | awk -F' : ' '/active env location/ { print $2 }')
+[[ $ml_location == $conda_home/envs/ml ]] || violent "conda activate ml lands in ${ml_location:-none}, expected $conda_home/envs/ml"
 
-print "\n Upgrade proof-pass."
-conda upgrade -y --all
-
-print "\n Mandatory cleanout."
-conda clean -y -a
-
-readonly since=$(date -d '-1 hour' '+%F %T')
-readonly changes=$(conda list --revisions | awk -v RS='' -v since="$since" 'substr($0, 1, 19) >= since { print $0 "\n" }')
+conda upgrade -y python || violent "conda ml python upgrade failed"
+conda upgrade -y --all || violent "conda ml upgrade ALL failed"
+conda clean -y -a || violent "conda ml final clean failed"
 
 print 'upgraded=true' > $GITHUB_OUTPUT
 
-printf $summary \
-"$(python --version)" \
-"$(conda info)" \
-"$(mamba info)" \
-"$since" \
-"$changes" > $GITHUB_STEP_SUMMARY
+conda_info 'Conda end state'

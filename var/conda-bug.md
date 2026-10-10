@@ -21,7 +21,11 @@ facts marked verified were checked there, the rest is labeled. Your job:
 1. conda + conda core (including conda-pypi) live ONLY in the `base`.
 2. `ml` holds ML-research packages ONLY, as Vadim decides.
 3. PyPI-only packages get into ml through base: `conda pypi install -n ml <pkg>`.
-4. conda-forge is the only channel, `channel_priority: strict`. No `conda-pypi` channel, no `defaults`.
+4. Channels, `channel_priority: strict`:
+   - conda-forge is hardcoded in the Miniforge package; present even with no config anywhere.
+   - `defaults` is allowed and will often be present.
+   - User-added channels are fine: appended at lowest priority and called out loudly in a warning.
+   - The `conda-pypi` channel is a horrible bug: rip it out with vengeance.
 
 Restate your understanding to Vadim. Speak of ANY conflicts you may see; for example, `base` moves to python 3.14 while
 `ml` is at python 3.12.latest - is there a problem with `conda pypi install -n ml <pkg>` resolving against `base` while
@@ -84,21 +88,20 @@ Restate your understanding to Vadim.
 
 ## Desired-state logic (agreed)
 
-Trigger = effective config ≠ desired, not "conda-pypi channel exists".
+Trigger = effective config ≠ desired (Goal rule 4).
 - Check the merged config (`conda config --show channels channel_priority`), not a grep of `~/.condarc`:
   conda also reads root `.condarc`, `~/.conda/.condarc`, `~/.config/conda/condarc`, env-level `.condarc`, `$CONDARC`.
   Those need to be ripped out with vengeance if found, Vadim's design calls for `~/.condarc` ONLY.
-- Desired: channels exactly `[conda-forge]`; `channel_priority: strict`; no `conda*` packages in ml.
+- Desired: no `conda-pypi` channel; user channels appended at lowest priority with a warning; `channel_priority: strict`;
+  no `conda*` packages in ml.
 Remedy is graded by defect (suggested):
 | Defect | Remedy |
 |---|---|
 | conda broken (`conda --version` gives no version) | Recovery policy below – blow away, reinstall |
-| Config drift (channels / priority) | `chmod +w` → write canonical `.condarc` → `chmod -w`. No reinstall |
-| conda core inside ml | `conda remove -n ml conda conda-pypi …` from base (independent of the channel) |
-Write protection: `~/.condarc` stays -w; the script's only write is the unlock-write-relock above.
-Any other writer then fails loudly – which requires the script to check exit codes and fail the job.
-
-Vadim saw my suggestion as "dumb slop", fyi, he'd rather blow `ml` away entirely and set it up correctly in one dependency resolution command.
+| Config drift (channels / priority) | `conda config` only – never touch `.condarc` directly. No reinstall |
+| conda core inside ml | detect hoses – Recovery policy below |
+| base python on 3.12 (pinned by `install python=3.12`, unremovable) | detect hoses – Recovery policy below |
+| ml healthy | upgrade: `python`, then `--all` |
 
 ## Recovery policy (Vadim's rule)
 
@@ -106,7 +109,7 @@ If conda is broken – `conda --version` returns no version or fails in any comm
 1. Blow the install away completely (the whole miniforge root; on tom `~/miniforge3` is a symlink to
    `/var/actions/miniforge3-mimis-gildi` fyi). Delete `.condarc` Don't MESS with the bootstrap files (zsh)!
 2. Reinstall Miniforge.
-3. Write canonical `.condarc` (conda-forge only, strict), -w - you can ask Vadim for what should be in it. Or propose.
+3. `conda config --set channel_priority strict` (as `var/agent/bin/conda-up` does).
 4. Recreate ml: `python=3.12` pinned + MINIMAL core list chosen by purpose; the rest comes in by dependency.
    Never from an `env export` dump as stupid LLM would be tempted to do. Vadim has a draft of that command for you.
    PyPI-only packages via `conda pypi install -n ml` from base?
@@ -126,12 +129,12 @@ Ask Vadim when not sure.
      keep `conda env config vars set KERAS_BACKEND=torch -n ml`.
    - Any PyPI-only package for ml: `conda pypi install -y -n ml <pkg>` from base.
    - Check exit codes; fail the job on any failed conda command. End with a verification of the desired state.
-   - Optional: `conda config --set conda_pypi_pip_warning false` (this writes `.condarc` – fold into canonical content instead).
+   - Optional: `conda config --set conda_pypi_pip_warning false` (writes `.condarc` via `conda config`).
    - Summary block uses `mamba info` and `python --version` – check they report what's intended without ml activated.
 2. Check `runner-detect-conda/` (`detect-conda.sh`, `conda-activate.sh`) and `workflows/runner-introspector.yml`
    for anything assuming conda inside ml or a specific channel list.
 3. Open for Vadim: the python/libpython flip-flop (`upgrade python` vs `upgrade --all`); `allow_conda_downgrades: true`
-   on tom – keep in canonical `.condarc` or not.
+   on tom – keep or not.
 
 Talk to Vadim about this proposal of mine. You and he will create an actual one. Know that `ml` is always the activated
 environment default for anything running on that runner.
@@ -141,7 +144,7 @@ environment default for anything running on that runner.
 - conda-pypi ≥0.13 (tom) – only 0.11 was read. Check it needs no `.condarc` channel entry for `conda pypi install`.
 - How tom's solver saw a `conda-pypi/noarch` index containing `opentelemetry-api` (tom's `~/.local/share/conda-pypi`?).
 - Other agents' state – only tom's logs and the Mac were examined.
-- Whether conda-forge-only + strict re-sources packages already installed from `defaults` on `upgrade --all`.
+- Whether strict priority re-sources packages already installed from `defaults` on `upgrade --all`.
 - That `conda remove` of conda from ml succeeds (nothing else in ml depends on conda).
 - What `notify_externally_managed_future` announces; a future conda-pypi may write `EXTERNALLY-MANAGED` into envs.
 - Whether `conda doctor --fix` converts ml's `pypi_0` pip packages.

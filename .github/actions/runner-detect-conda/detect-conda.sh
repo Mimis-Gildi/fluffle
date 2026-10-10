@@ -68,6 +68,7 @@ readonly base_location=$(print -r -- $base_info | awk -F' : ' '/active env locat
 
 readonly py_base_version=$(python --version | awk '/^Python/ { print $2 }')
 [[ -n $py_base_version ]] || hosed "python --version in base gives no version"
+[[ $py_base_version == 3.12.* ]] && hosed "base Python $py_base_version pinned to 3.12, base must be recreated"
 
 behind $py_base_required $py_base_version && {
   printf '::warning title=Python is behind::base Python %s, floor %s\n' $py_base_version $py_base_required
@@ -86,6 +87,8 @@ behind $mamba_required $mamba_version && {
 
 envs=$(conda env list) || hosed "conda env list failed"
 if [[ -n $(print -r -- $envs | awk '$1 == "ml"') ]]; then
+  ml_packages=$(conda list -n ml) || hosed "conda list -n ml failed"
+  [[ -n $(print -r -- $ml_packages | awk '$1 == "conda"') ]] && hosed "conda core installed in ml, base must be recreated"
   conda activate ml
   if [[ $(conda_info 'Conda ml' | awk -F' : ' '/active environment/ { print $2 }') == ml ]]; then
     readonly py_ml_version=$(python --version | awk '/^Python/ { print $2 }')
