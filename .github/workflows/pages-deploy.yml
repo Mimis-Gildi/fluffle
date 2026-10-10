@@ -44,7 +44,7 @@ jobs:
       - name: Publish Pages
         id: deployment
         timeout-minutes: 3
-        uses: actions/deploy-pages@v5.0.0
+        uses: actions/deploy-pages@v5.0.1
         with:
           artifact_name: github-pages
           reporting_interval: '700'
