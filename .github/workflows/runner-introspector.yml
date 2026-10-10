@@ -75,7 +75,7 @@ jobs:
     runs-on: [ self-hosted, peep ]
     timeout-minutes: 53
     outputs:
-      failed: ${{ steps.conda.outputs.failed }}
+      failed: ${{ steps.conda-probe.outputs.failed }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
       installed: ${{ steps.conda-install.outputs.installed }}
 

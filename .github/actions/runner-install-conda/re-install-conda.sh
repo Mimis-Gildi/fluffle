@@ -1,44 +1,24 @@
 #!/usr/bin/env zsh
 
-readonly summary=$(<<'EOF'
-## Conda Install
-
-Outcome: %s
-
-### Conda `info`
-
-```text
-%s
-```
-
-### Mamba `info`
-
-```text
-%s
-```
-
-## Python base %s
-
-```text
-%s
-```
-
-
-## Python ml %s
-
-```text
-%s
-```
-
-## Packages ml %s
-
-```text
-%s
-```
-
-EOF
-)
-
 print 'completed=false' > $GITHUB_OUTPUT
 
-#ToDo:
+readonly action_home=${0:A:h}
+source $action_home/conda-remove.sh
+source $action_home/conda-install.sh
+source $action_home/conda-ml.sh
+
+conda_remove
+
+remaining=$(conda_remove_remaining)
+[[ -n $remaining ]] && {
+  printf '::error title=Conda leftovers::%s files survived rip out\n' ${#${(f)remaining}}
+  printf '### Conda leftovers\n\n```text\n%s\n```\n\n' $remaining >> $GITHUB_STEP_SUMMARY
+}
+
+conda_install
+
+conda_ml
+
+printf '### Conda installed\n\n```text\n%s\n```\n\n' "$(conda info)" >> $GITHUB_STEP_SUMMARY
+
+print 'completed=true' > $GITHUB_OUTPUT
