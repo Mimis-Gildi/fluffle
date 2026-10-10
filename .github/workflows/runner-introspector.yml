@@ -77,23 +77,32 @@ jobs:
     outputs:
       failed: ${{ steps.conda.outputs.failed }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
+      installed: ${{ steps.conda-install.outputs.completed }}
 
     steps:
 
       - name: Introspect Conda
-        id: conda
+        id: conda-probe
         timeout-minutes: 7
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
-          conda-version: '26.5.3'
-          mamba-version: '2.8.1'
-          python-version: '3.12.13'
+          python-base-version: '3.14.7'
+          python-version: '3.12.14'
+          conda-version: '26.7.2'
+          mamba-version: '2.9.0'
 
       - name: Upgrade Conda
         id: conda-upgrade
         timeout-minutes: 44
-#        if: steps.conda.outputs.failed == 'true'
+        if: steps.conda-probe.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
+
+      - name: Re-Install Conda
+        id: conda-install
+        timeout-minutes: 44
+        if: steps.conda-probe.outputs.hosed == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
+
 
   ruby-job:
     needs: canary-flight-job

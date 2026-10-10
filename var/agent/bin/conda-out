@@ -1,10 +1,12 @@
 #!/usr/bin/env zsh
 
-INSTALLER_WORKING_DIRECTORY="tmp/installers/miniforge"
+INSTALLER_WORKING_DIRECTORY="${TMPDIR:-/tmp}/installers/miniforge"
 
 chmod +w .condarc
 
 rm -rf "$INSTALLER_WORKING_DIRECTORY"
 rm -rf miniforge3
 rm -rf .conda
+rm -rf .config/conda
+rm -rf .local/share/conda-pypi
 rm -r .condarc

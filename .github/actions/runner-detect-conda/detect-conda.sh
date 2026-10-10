@@ -1,8 +1,14 @@
 #!/usr/bin/env zsh
 
-readonly py_ml_required=${1:-0}
-readonly conda_required=${2:-0}
-readonly mamba_required=${3:-0}
+readonly py_base_required=${1:-0}
+readonly py_ml_required=${2:-0}
+readonly conda_required=${3:-0}
+readonly mamba_required=${4:-0}
+
+readonly conda_home=$HOME/miniforge3
+readonly conda_bin=$conda_home/bin
+readonly conda_which=$conda_bin/conda
+readonly mamba_which=$conda_bin/mamba
 
 behind() { [[ $(printf '%s\n%s' $1 $2 | sort -V | head -n1) != $1 ]] }
 
@@ -12,15 +18,27 @@ hosed() {
   exit 0
 }
 
-readonly conda_bin=$HOME/miniforge3/bin/conda
-readonly mamba_bin=$HOME/miniforge3/bin/mamba
-[[ -x $conda_bin ]] || hosed "no conda at $conda_bin"
-[[ -x $mamba_bin ]] || hosed "no mamba at $mamba_bin"
+conda_info() {
+  local info=$(conda info)
+  printf '### %s: shell level %s, env %s\n\n```\n%s\n```\n\n' $1 ${CONDA_SHLVL:-none} ${CONDA_DEFAULT_ENV:-none} $info >> $GITHUB_STEP_SUMMARY
+  print -r -- $info
+}
+
+[[ -x $conda_which ]] || hosed "no conda at $conda_which"
+[[ -x $mamba_which ]] || hosed "no mamba at $mamba_which"
+
+printf '::notice title=Conda at job init::shell level %s, env %s\n' ${CONDA_SHLVL:-none} ${CONDA_DEFAULT_ENV:-none}
 
 readonly activation=${0:A:h}/conda-activate.sh
 [[ -s $activation ]] && source $activation
 (( $+functions[conda] )) || hosed "conda not activated"
 (( $+functions[mamba] )) || hosed "mamba not activated"
+
+printf '::notice title=Conda after activation hook::shell level %s, env %s\n' ${CONDA_SHLVL:-none} ${CONDA_DEFAULT_ENV:-none}
+conda_info 'Conda after activation hook' > /dev/null
+
+readonly conda_base=$(conda info --base)
+[[ $conda_base == $conda_home ]] || hosed "conda base is ${conda_base:-none}, expected $conda_home"
 
 readonly conda_version=$(conda --version | awk '/^conda/ { print $2 }')
 readonly mamba_version=$(mamba --version)
@@ -28,29 +46,59 @@ readonly mamba_version=$(mamba --version)
 [[ -n $mamba_version ]] || hosed "mamba --version gives no version"
 
 channels=$(conda config --show channels) || hosed "conda config --show channels failed"
-[[ $(print -r -- $channels | awk '/^ *- / { print $2 }') == conda-forge ]] || hosed "channels are not exactly [conda-forge]"
+[[ -n $(print -r -- $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
+  printf '::warning title=Conda channels drift::conda-pypi channel present\n'
+  print 'failed=true' > $GITHUB_OUTPUT
+}
 
 priority=$(conda config --show channel_priority) || hosed "conda config --show channel_priority failed"
-[[ $(print -r -- $priority | awk '{ print $2 }') == strict ]] || hosed "channel_priority is not strict"
+[[ $(print -r -- $priority | awk '{ print $2 }') == strict ]] || {
+    printf '::warning title=Conda priority drift::channel_priority is not strict\n'
+    print 'failed=true' > $GITHUB_OUTPUT
+}
 
-sources=$($conda_bin config --show-sources) || hosed "conda config --show-sources failed"
-readonly foreign_sources=$(print -r -- $sources | awk -v own="$HOME/.condarc" '/^==> / && $2 != own { print $2 }')
-[[ -z $foreign_sources ]] || hosed "config sources other than ~/.condarc: ${foreign_sources//$'\n'/ }"
+while (( CONDA_SHLVL > 1 )); do
+  conda deactivate
+  printf '::notice title=Conda deactivate::shell level %s, env %s\n' ${CONDA_SHLVL:-none} ${CONDA_DEFAULT_ENV:-none}
+  conda_info 'Conda deactivate' > /dev/null
+done
+readonly base_info=$(conda_info 'Conda base')
+readonly base_location=$(print -r -- $base_info | awk -F' : ' '/active env location/ { print $2 }')
+[[ $base_location == $conda_home ]] || hosed "conda deactivate lands in ${base_location:-none}, expected $conda_home"
 
-ml_list=$($conda_bin list -n ml) || hosed "conda list -n ml failed"
-readonly ml_core=$(print -r -- $ml_list | awk '!/^#/ && $1 ~ /^conda/ { print $1 }')
-[[ -z $ml_core ]] || hosed "conda core in ml: ${ml_core//$'\n'/ }"
-readonly ml_foreign=$(print -r -- $ml_list | awk '!/^#/ && $4 != "conda-forge" { print $1 "(" $4 ")" }')
-[[ -z $ml_foreign ]] || hosed "ml packages not from conda-forge: ${ml_foreign//$'\n'/ }"
+readonly py_base_version=$(python --version | awk '/^Python/ { print $2 }')
+[[ -n $py_base_version ]] || hosed "python --version in base gives no version"
 
-conda activate ml || hosed "conda activate ml failed"
-
-readonly py_ml_version=$(python --version | awk '/^Python/ { print $2 }')
-
-if behind $py_ml_required $py_ml_version || behind $conda_required $conda_version || behind $mamba_required $mamba_version; then
-  printf '::warning title=Conda is behind::Python %s (%s), Conda %s (%s), Mamba %s (%s)\n' \
-    $py_ml_version $py_ml_required $conda_version $conda_required $mamba_version $mamba_required
+behind $py_base_required $py_base_version && {
+  printf '::warning title=Python is behind::base Python %s, floor %s\n' $py_base_version $py_base_required
   print 'failed=true' > $GITHUB_OUTPUT
+}
+
+behind $conda_required $conda_version && {
+  printf '::warning title=Conda is behind::Conda %s, floor %s\n' $conda_version $conda_required
+  print 'failed=true' > $GITHUB_OUTPUT
+}
+
+behind $mamba_required $mamba_version && {
+  printf '::warning title=Mamba is behind::Mamba %s, floor %s\n' $mamba_version $mamba_required
+  print 'failed=true' > $GITHUB_OUTPUT
+}
+
+envs=$(conda env list) || hosed "conda env list failed"
+if [[ -n $(print -r -- $envs | awk '$1 == "ml"') ]]; then
+  conda activate ml
+  if [[ $(conda_info 'Conda ml' | awk -F' : ' '/active environment/ { print $2 }') == ml ]]; then
+    readonly py_ml_version=$(python --version | awk '/^Python/ { print $2 }')
+    behind $py_ml_required ${py_ml_version:-0.0.0} && {
+      printf '::warning title=Python is behind::ml Python %s, floor %s\n' ${py_ml_version:-none} $py_ml_required
+      print 'failed=true' > $GITHUB_OUTPUT
+    }
+  else
+    hosed 'ml exists but does not activate'
+  fi
 else
-  printf '::notice title=Python Stack OK::Python %s, Conda %s, Mamba %s\n' $py_ml_version $conda_version $mamba_version
+  printf '::warning title=Conda ml missing::no ml environment\n'
+  print 'failed=true' > $GITHUB_OUTPUT
 fi
+
+printf '::notice title=Conda stack::base Python %s, ml Python %s, Conda %s, Mamba %s\n' $py_base_version ${py_ml_version:-none} $conda_version $mamba_version

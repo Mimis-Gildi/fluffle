@@ -1,0 +1,20 @@
+name: "Install Conda"
+description: "Runs Clean Conda Rip out and Install"
+author: "rdd13r"
+branding:
+  icon: "chevrons-up"
+  color: "green"
+
+outputs:
+  installed:
+    description: "true if reinstall was executed and succeeded"
+    value: ${{ steps.install.outputs.completed }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: install
+      shell: zsh -l {0}
+      run: ${{ github.action_path }}/re-install-conda.sh

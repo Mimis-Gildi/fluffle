@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-INSTALLER_WORKING_DIRECTORY="${HOME}/tmp/installers/miniforge"
+INSTALLER_WORKING_DIRECTORY="${TMPDIR:-/tmp}/installers/miniforge"
 FORGE_VERSION="Miniforge3"
 FORGE_PRODUCT="$FORGE_VERSION-$(uname)-$(uname -m)"
 FORGE_SCRIPT="$FORGE_PRODUCT.sh"
@@ -15,6 +15,6 @@ chmod +x "$FORGE_SCRIPT"
 ./"$FORGE_SCRIPT" -bu
 popd
 
-source .zshrc-conda
+source .zshrc
 
 conda config --set channel_priority strict

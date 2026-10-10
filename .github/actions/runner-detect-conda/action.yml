@@ -1,20 +1,27 @@
 name: "Detect Conda"
-description: "Detects conda/mamba/python versions in the ml environment against floor thresholds."
+description: "Detects conda/mamba/python versions in the Conda environment against floor thresholds."
 author: "rdd13r"
 branding:
   icon: "box"
   color: "green"
 
 inputs:
+  python-base-version:
+    description: "Minimum expected Python base environment version"
+    required: false
+    default: "3.14.7"
   python-version:
-    description: "Minimum expected Python version"
-    required: true
+    description: "Minimum expected Python version for ml environment"
+    required: false
+    default: "3.12.15"
   conda-version:
     description: "Minimum expected Conda version"
-    required: true
+    required: false
+    default: "26.7.2"
   mamba-version:
     description: "Minimum expected Mamba version"
-    required: true
+    required: false
+    default: "2.9.0"
 
 outputs:
   failed:
@@ -31,4 +38,4 @@ runs:
 
     - id: detect
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/detect-conda.sh ${{ inputs.python-version }} ${{ inputs.conda-version }} ${{ inputs.mamba-version }}
+      run: ${{ github.action_path }}/detect-conda.sh ${{ inputs.python-base-version }} ${{ inputs.python-version }} ${{ inputs.conda-version }} ${{ inputs.mamba-version }}

@@ -5,7 +5,7 @@
     <option name="SCRIPT_PATH" value="$PROJECT_DIR$/.github/actions/runner-detect-conda/detect-conda.sh" />
     <option name="SCRIPT_OPTIONS" value="" />
     <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
-    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/.github/actions/runner-upgrade-conda" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/.github/actions/runner-detect-conda" />
     <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
     <option name="INTERPRETER_PATH" value="/usr/bin/env" />
     <option name="INTERPRETER_OPTIONS" value="zsh" />
@@ -13,6 +13,7 @@
     <option name="EXECUTE_SCRIPT_FILE" value="true" />
     <envs>
       <env name="GITHUB_OUTPUT" value="~/tmp/detect-conda.txt" />
+      <env name="GITHUB_STEP_SUMMARY" value="~/tmp/detect-conda-summary.txt" />
     </envs>
     <method v="2" />
   </configuration>
