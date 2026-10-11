@@ -104,6 +104,24 @@ jobs:
         if: steps.conda-probe.outputs.hosed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-install-conda@main
 
+      - name: Verify Conda
+        id: conda-verify
+        timeout-minutes: 7
+        if: steps.conda-upgrade.outputs.upgraded == 'true' || steps.conda-install.outputs.installed == 'true'
+        uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
+        with:
+          python-base-version: '3.14.7'
+          python-version: '3.12.14'
+          conda-version: '26.7.2'
+          mamba-version: '2.9.0'
+
+      - name: Conda Still Broken
+        if: steps.conda-verify.outputs.failed == 'true' || steps.conda-verify.outputs.hosed == 'true'
+        shell: zsh {0}
+        run: |
+          print '::error title=Conda verify::still failed=${{ steps.conda-verify.outputs.failed }} hosed=${{ steps.conda-verify.outputs.hosed }} after remedy'
+          exit 1
+
 
   ruby-job:
     needs: canary-flight-job
@@ -122,7 +140,7 @@ jobs:
           bundler-version: '2.7.2'
 
 
-  java-manager-job:
+  java-job:
     needs: sdkman-job
     runs-on: [ self-hosted, peep ]
     timeout-minutes: 5
@@ -166,7 +184,7 @@ jobs:
 
 
   summary:
-    needs: [sdkman-job, conda-job, ruby-job, java-manager-job, sdk-candidates]
+    needs: [sdkman-job, conda-job, ruby-job, java-job, sdk-candidates]
     if: always()
     runs-on: [self-hosted, peep]
     timeout-minutes: 1
