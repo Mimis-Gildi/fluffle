@@ -5,6 +5,11 @@ branding:
   icon: "upload-cloud"
   color: "orange"
 
+inputs:
+  python-env:
+    description: "Name of the Python working environment"
+    required: true
+
 outputs:
   upgraded:
     description: "true if selfupdate was executed"
@@ -17,4 +22,4 @@ runs:
 
     - id: upgrade
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/upgrade-conda.sh
+      run: ${{ github.action_path }}/upgrade-conda.sh ${{ inputs.python-env }}

@@ -5,6 +5,14 @@ branding:
   icon: "chevrons-up"
   color: "green"
 
+inputs:
+  python-env:
+    description: "Name of the Python working environment"
+    required: true
+  python-pin:
+    description: "Python series the python-env environment is created with"
+    required: true
+
 outputs:
   installed:
     description: "true if reinstall was executed and succeeded"
@@ -17,4 +25,4 @@ runs:
 
     - id: install
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/re-install-conda.sh
+      run: ${{ github.action_path }}/re-install-conda.sh ${{ inputs.python-env }} ${{ inputs.python-pin }}

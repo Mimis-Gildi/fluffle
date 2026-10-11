@@ -5,9 +5,17 @@ branding:
   icon: clock
   color: "orange"
 
+inputs:
+  java-major:
+    description: "Java major version (e.g. 21)"
+    required: true
+  java-vendor:
+    description: "SDKMAN Java vendor suffix (e.g. tem)"
+    required: true
+
 outputs:
   failed:
-    description: "true if active java is not latest 21-tem"
+    description: "true if active java is not latest of java-major and java-vendor"
     value: ${{ steps.detect.outputs.failed }}
 
 runs:
@@ -17,4 +25,4 @@ runs:
 
     - id: detect
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/detect-java.sh
+      run: ${{ github.action_path }}/detect-java.sh ${{ inputs.java-major }} ${{ inputs.java-vendor }}

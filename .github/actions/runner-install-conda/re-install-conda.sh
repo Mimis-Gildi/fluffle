@@ -17,7 +17,7 @@ remaining=$(conda_remove_remaining)
 
 conda_install
 
-conda_ml
+conda_ml $1 $2
 
 printf '### Conda installed\n\n```text\n%s\n```\n\n' "$(conda info)" >> $GITHUB_STEP_SUMMARY
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env zsh
 
+readonly java_major=$1
+readonly java_vendor=$2
+
 print '## Upgrade Java' > $GITHUB_STEP_SUMMARY
 print 'upgraded=false' > $GITHUB_OUTPUT
 
@@ -11,7 +14,7 @@ sdk version
 sdk update
 
 readonly actual=$(sdk current java | awk '{ print $NF }')
-readonly latest=$(sdk list java | grep -oE '21\.[0-9.]+\-tem' | sort -V | tail -n1)
+readonly latest=$(sdk list java | grep -oE "${java_major}\.[0-9.]+-${java_vendor}" | sort -V | tail -n1)
 
 
 if [[ $actual != $latest ]]; then

@@ -24,6 +24,30 @@ defaults:
   run:
     shell: zsh -l {0}
 
+env:
+  # SDKMAN
+  SDKMAN_VERSION: '5.23.0'
+  SDKMAN_NATIVE: '0.7.34'
+
+  # Java
+  JAVA_MAJOR: '21'
+  JAVA_VENDOR: 'tem'
+
+  # Conda
+  CONDA_VERSION: '26.7.2'
+  MAMBA_VERSION: '2.9.0'
+  PYTHON_BASE_VERSION: '3.14.7'
+
+  # Python and ML
+  PYTHON_ENV: 'ml'
+  PYTHON_PIN: '3.12'
+  PYTHON_VERSION: '3.12.15'
+
+  # Ruby
+  RUBY_VERSION: '3.3.5'
+  GEMS_VERSION: '3.5.16'
+  BUNDLER_VERSION: '2.7.2'
+
 jobs:
 
   canary-flight-job:
@@ -61,8 +85,8 @@ jobs:
         id: sdkman
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-sdkman@main
         with:
-          sdkman-version: '5.23.0'
-          sdkman-native: '0.7.34'
+          sdkman-version: ${{ env.SDKMAN_VERSION }}
+          sdkman-native: ${{ env.SDKMAN_NATIVE }}
 
       - name: Upgrade SDKMAN
         id: sdkman-upgrade
@@ -87,22 +111,28 @@ jobs:
         timeout-minutes: 7
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
-          python-base-version: '3.14.7'
-          python-version: '3.12.14'
-          conda-version: '26.7.2'
-          mamba-version: '2.9.0'
+          python-base-version: ${{ env.PYTHON_BASE_VERSION }}
+          python-env: ${{ env.PYTHON_ENV }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          conda-version: ${{ env.CONDA_VERSION }}
+          mamba-version: ${{ env.MAMBA_VERSION }}
 
       - name: Upgrade Conda
         id: conda-upgrade
         timeout-minutes: 44
         if: steps.conda-probe.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
+        with:
+          python-env: ${{ env.PYTHON_ENV }}
 
       - name: Re-Install Conda
         id: conda-install
         timeout-minutes: 44
         if: steps.conda-probe.outputs.hosed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-install-conda@main
+        with:
+          python-env: ${{ env.PYTHON_ENV }}
+          python-pin: ${{ env.PYTHON_PIN }}
 
       - name: Verify Conda
         id: conda-verify
@@ -110,10 +140,11 @@ jobs:
         if: steps.conda-upgrade.outputs.upgraded == 'true' || steps.conda-install.outputs.installed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
-          python-base-version: '3.14.7'
-          python-version: '3.12.14'
-          conda-version: '26.7.2'
-          mamba-version: '2.9.0'
+          python-base-version: ${{ env.PYTHON_BASE_VERSION }}
+          python-env: ${{ env.PYTHON_ENV }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          conda-version: ${{ env.CONDA_VERSION }}
+          mamba-version: ${{ env.MAMBA_VERSION }}
 
       - name: Conda Still Broken
         if: steps.conda-verify.outputs.failed == 'true' || steps.conda-verify.outputs.hosed == 'true'
@@ -135,9 +166,9 @@ jobs:
         id: ruby
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-ruby@main
         with:
-          ruby-version: '3.3.5'
-          gems-version: '3.5.16'
-          bundler-version: '2.7.2'
+          ruby-version: ${{ env.RUBY_VERSION }}
+          gems-version: ${{ env.GEMS_VERSION }}
+          bundler-version: ${{ env.BUNDLER_VERSION }}
 
 
   java-job:
@@ -153,11 +184,17 @@ jobs:
       - name: Introspect Java
         id: java
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-java@main
+        with:
+          java-major: ${{ env.JAVA_MAJOR }}
+          java-vendor: ${{ env.JAVA_VENDOR }}
 
       - name: Upgrade Java
         id: java-upgrade
         if: steps.java.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-java@main
+        with:
+          java-major: ${{ env.JAVA_MAJOR }}
+          java-vendor: ${{ env.JAVA_VENDOR }}
 
 
   sdk-candidates:

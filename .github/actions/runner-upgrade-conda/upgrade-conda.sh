@@ -14,6 +14,7 @@ conda_info() {
 }
 
 readonly conda_home=$HOME/miniforge3
+readonly py_env=$1
 
 readonly activation=${0:A:h}/conda-activate.sh
 [[ -s $activation ]] && source $activation
@@ -59,15 +60,15 @@ conda upgrade -y conda || violent "conda conda upgrade failed"
 conda upgrade -y --all || violent "conda upgrade ALL failed"
 conda clean -y -a || violent "conda base final clean failed"
 
-conda activate ml || violent "conda activate ml failed"
-conda_info 'Conda ml'
-ml_info=$(conda info) || violent "conda info failed in ml"
+conda activate $py_env || violent "conda activate $py_env failed"
+conda_info "Conda $py_env"
+ml_info=$(conda info) || violent "conda info failed in $py_env"
 readonly ml_location=$(print -r -- $ml_info | awk -F' : ' '/active env location/ { print $2 }')
-[[ $ml_location == $conda_home/envs/ml ]] || violent "conda activate ml lands in ${ml_location:-none}, expected $conda_home/envs/ml"
+[[ $ml_location == $conda_home/envs/$py_env ]] || violent "conda activate $py_env lands in ${ml_location:-none}, expected $conda_home/envs/$py_env"
 
-conda upgrade -y python || violent "conda ml python upgrade failed"
-conda upgrade -y --all || violent "conda ml upgrade ALL failed"
-conda clean -y -a || violent "conda ml final clean failed"
+conda upgrade -y python || violent "conda $py_env python upgrade failed"
+conda upgrade -y --all || violent "conda $py_env upgrade ALL failed"
+conda clean -y -a || violent "conda $py_env final clean failed"
 
 print 'upgraded=true' > $GITHUB_OUTPUT
 

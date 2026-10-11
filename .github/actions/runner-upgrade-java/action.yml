@@ -1,9 +1,18 @@
 name: "Upgrade Java"
-description: "Upgrades Java 21-tem and 25-tem to latest via SDKMAN. Default stays 21."
+description: "Upgrades Java of java-major and java-vendor to latest via SDKMAN and sets it default."
 author: "rdd13r"
 branding:
+  # noinspection YAMLSchemaValidation
   icon: "coffee"
   color: "orange"
+
+inputs:
+  java-major:
+    description: "Java major version (e.g. 21)"
+    required: true
+  java-vendor:
+    description: "SDKMAN Java vendor suffix (e.g. tem)"
+    required: true
 
 outputs:
   upgraded:
@@ -17,4 +26,4 @@ runs:
 
     - id: upgrade
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/upgrade-java.sh
+      run: ${{ github.action_path }}/upgrade-java.sh ${{ inputs.java-major }} ${{ inputs.java-vendor }}

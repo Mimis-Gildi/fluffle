@@ -1,9 +1,10 @@
 #!/usr/bin/env zsh
 
-readonly py_base_required=${1:-0}
-readonly py_ml_required=${2:-0}
-readonly conda_required=${3:-0}
-readonly mamba_required=${4:-0}
+readonly py_base_required=$1
+readonly py_ml_required=$2
+readonly conda_required=$3
+readonly mamba_required=$4
+readonly py_env=$5
 
 readonly conda_home=$HOME/miniforge3
 readonly conda_bin=$conda_home/bin
@@ -86,22 +87,22 @@ behind $mamba_required $mamba_version && {
 }
 
 envs=$(conda env list) || hosed "conda env list failed"
-if [[ -n $(print -r -- $envs | awk '$1 == "ml"') ]]; then
-  ml_packages=$(conda list -n ml) || hosed "conda list -n ml failed"
-  [[ -n $(print -r -- $ml_packages | awk '$1 == "conda"') ]] && hosed "conda core installed in ml, base must be recreated"
-  conda activate ml
-  if [[ $(conda_info 'Conda ml' | awk -F' : ' '/active environment/ { print $2 }') == ml ]]; then
+if [[ -n $(print -r -- $envs | awk -v env=$py_env '$1 == env') ]]; then
+  ml_packages=$(conda list -n $py_env) || hosed "conda list -n $py_env failed"
+  [[ -n $(print -r -- $ml_packages | awk '$1 == "conda"') ]] && hosed "conda core installed in $py_env, base must be recreated"
+  conda activate $py_env
+  if [[ $(conda_info "Conda $py_env" | awk -F' : ' '/active environment/ { print $2 }') == $py_env ]]; then
     readonly py_ml_version=$(python --version | awk '/^Python/ { print $2 }')
     behind $py_ml_required ${py_ml_version:-0.0.0} && {
-      printf '::warning title=Python is behind::ml Python %s, floor %s\n' ${py_ml_version:-none} $py_ml_required
+      printf '::warning title=Python is behind::%s Python %s, floor %s\n' $py_env ${py_ml_version:-none} $py_ml_required
       print 'failed=true' > $GITHUB_OUTPUT
     }
   else
-    hosed 'ml exists but does not activate'
+    hosed "$py_env exists but does not activate"
   fi
 else
-  printf '::warning title=Conda ml missing::no ml environment\n'
+  printf '::warning title=Conda %s missing::no %s environment\n' $py_env $py_env
   print 'failed=true' > $GITHUB_OUTPUT
 fi
 
-printf '::notice title=Conda stack::base Python %s, ml Python %s, Conda %s, Mamba %s\n' $py_base_version ${py_ml_version:-none} $conda_version $mamba_version
+printf '::notice title=Conda stack::base Python %s, %s Python %s, Conda %s, Mamba %s\n' $py_base_version $py_env ${py_ml_version:-none} $conda_version $mamba_version
