@@ -56,6 +56,22 @@ jobs:
 
     steps:
 
+      - name: Toolchain Snapshot
+        continue-on-error: true
+        run: |
+          print -r -- "PATH=$PATH"
+          print -r -- "CONDA_SHLVL=${CONDA_SHLVL:-none} CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-none}"
+          whence -va sdk conda mamba python java ruby gem bundle
+          sdk version
+          sdk current
+          java -version
+          conda --version
+          mamba --version
+          python --version
+          ruby --version
+          gem --version
+          bundle --version
+
       - name: Hosted Infra Snapshot
         if: inputs.host-info
         run: |
