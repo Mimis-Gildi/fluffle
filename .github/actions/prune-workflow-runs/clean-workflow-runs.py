@@ -3,39 +3,26 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from enum import Enum
 from typing import Callable, Final
 
-
-class Classification(Enum):
-    NONE = ""
-    KEEP = "Keep"
-    DISCARD = "Discard"
-
-
-class DeletionResult(Enum):
-    NONE = ""
-    MUTED = "Muted"
-    DELETED = "Deleted"
-    FAILED = "Failed"
+from prune_support import (
+    DEFAULT_KEEP_LAST_ON_MAIN, DEFAULT_STALE_MINUTES, DRY_RUN, DRY_RUN_NOTICE_S,
+    Classifiable, DeletionResult,
+    detect_branch, fail_fetch, parse_timestamp, summary_output,
+)
 
 QUERY_LIMIT_S: Final[str] = "1000"
 TERMINAL_RUN_STATUSES: Final[set[str]] = {"completed"}
-DEFAULT_STALE_MINUTES: Final[int] = int(os.environ.get("STALE_MINUTES", "11"))
-DEFAULT_KEEP_LAST_ON_MAIN: Final[int] = int(os.environ.get("KEEP_LAST", "2"))
-DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1", "yes")
 
 
 # Data model
 
 @dataclass(slots=True)
-class WorkflowRun:
+class WorkflowRun(Classifiable):
     """A single workflow run with classification metadata. All fields typed, no stringly-typed access."""
     database_id: int
     workflow_name: str
@@ -43,22 +30,12 @@ class WorkflowRun:
     head_branch: str
     event: str
     status: str
-    kept: Classification = Classification.NONE
-    reason: str = ""
     deleted: DeletionResult = DeletionResult.NONE
     delete_error: str = ""
 
     @property
-    def is_classified(self) -> bool:
-        return self.kept != Classification.NONE
-
-    @property
-    def is_kept(self) -> bool:
-        return self.kept == Classification.KEEP
-
-    @property
-    def is_discarded(self) -> bool:
-        return self.kept == Classification.DISCARD
+    def label(self) -> str:
+        return f"Run {self.database_id}"
 
     @property
     def is_terminal(self) -> bool:
@@ -76,28 +53,6 @@ class WorkflowRun:
             status=raw_run.get("status", "unknown"),
         )
 
-    def classify(self, kept: Classification, reason: str) -> None:
-        """Set classification. Only allowed once -- raises if already classified or if NONE is passed."""
-        if kept == Classification.NONE:
-            raise ValueError(f"Run {self.database_id}: cannot classify as NONE")
-        if self.is_classified:
-            raise ValueError(f"Run {self.database_id} already classified as '{self.kept.value}' ({self.reason}), cannot reclassify as '{kept.value}' ({reason})")
-        self.kept = kept
-        self.reason = reason
-
-    def keep(self, reason: str) -> None:
-        self.classify(Classification.KEEP, reason)
-
-    def discard(self, reason: str) -> None:
-        self.classify(Classification.DISCARD, reason)
-
-
-# Supporting functions
-
-def parse_run_timestamp(iso_timestamp_s: str) -> datetime:
-    """Parse GitHub's ISO 8601 timestamp into a timezone-aware datetime."""
-    return datetime.fromisoformat(iso_timestamp_s.replace("Z", "+00:00"))
-
 
 # Pipeline
 
@@ -111,10 +66,7 @@ class RunPipeline:
     @classmethod
     def on_current_branch(cls) -> RunPipeline:
         """Detect the current branch from environment or git."""
-        detected_branch = os.environ.get("BRANCH") or subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True
-        ).stdout.strip()
+        detected_branch = detect_branch()
         print(f"Branch: {detected_branch}")
         return cls(branch=detected_branch, runs=[])
 
@@ -127,8 +79,7 @@ class RunPipeline:
 
         gh_result = subprocess.run(workflow_runs_command, capture_output=True, text=True)
         if gh_result.returncode != 0:
-            print(f"::error title=Fetch Failed::{gh_result.stderr.strip()}", file=sys.stderr)
-            sys.exit(1)
+            fail_fetch(gh_result.stderr)
 
         raw_runs = json.loads(gh_result.stdout)
         self.runs = [WorkflowRun.from_gh_json(raw_run) for raw_run in raw_runs]
@@ -176,7 +127,7 @@ class RunPipeline:
         for run in self.runs:
             if run.is_classified:
                 continue
-            run_age_minutes = (now - parse_run_timestamp(run.created_at)).total_seconds() / 60
+            run_age_minutes = (now - parse_timestamp(run.created_at)).total_seconds() / 60
             if run_age_minutes < stale_minutes:
                 run.keep(f"grace, {run_age_minutes:.0f}m old, {run.head_branch}")
             else:
@@ -227,30 +178,24 @@ class RunPipeline:
 
 def write_summary(workflow_runs: list[WorkflowRun]) -> None:
     """Write kept/discarded Markdown tables. Writes to GITHUB_STEP_SUMMARY or stdout."""
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    out = open(summary_path, "a") if summary_path else sys.stdout
+    with summary_output() as out:
+        kept_runs = [run for run in workflow_runs if run.is_kept]
+        discarded_runs = [run for run in workflow_runs if run.is_discarded]
 
-    kept_runs = [run for run in workflow_runs if run.is_kept]
-    discarded_runs = [run for run in workflow_runs if run.is_discarded]
+        print(f"\n### Kept ({len(kept_runs)})\n", file=out)
+        print("| Run ID | Workflow | Branch | Status | Created | Reason |", file=out)
+        print("|--------|----------|--------|--------|---------|--------|", file=out)
+        for run in kept_runs:
+            print(f"| {run.database_id} | {run.workflow_name} | {run.head_branch} | {run.status} | {run.created_at} | {run.reason} |", file=out)
 
-    print(f"\n### Kept ({len(kept_runs)})\n", file=out)
-    print("| Run ID | Workflow | Branch | Status | Created | Reason |", file=out)
-    print("|--------|----------|--------|--------|---------|--------|", file=out)
-    for run in kept_runs:
-        print(f"| {run.database_id} | {run.workflow_name} | {run.head_branch} | {run.status} | {run.created_at} | {run.reason} |", file=out)
+        print(f"\n### Discarded ({len(discarded_runs)})\n", file=out)
+        print("| Run ID | Workflow | Branch | Status | Created | Reason | Result |", file=out)
+        print("|--------|----------|--------|--------|---------|--------|--------|", file=out)
+        for run in discarded_runs:
+            deleted_display = run.deleted.value if run.deleted != DeletionResult.NONE else "Pending"
+            print(f"| {run.database_id} | {run.workflow_name} | {run.head_branch} | {run.status} | {run.created_at} | {run.reason} | {deleted_display} |", file=out)
 
-    print(f"\n### Discarded ({len(discarded_runs)})\n", file=out)
-    print("| Run ID | Workflow | Branch | Status | Created | Reason | Result |", file=out)
-    print("|--------|----------|--------|--------|---------|--------|--------|", file=out)
-    for run in discarded_runs:
-        deleted_display = run.deleted.value if run.deleted != DeletionResult.NONE else "Pending"
-        print(f"| {run.database_id} | {run.workflow_name} | {run.head_branch} | {run.status} | {run.created_at} | {run.reason} | {deleted_display} |", file=out)
-
-    dry_run_notice_s = " (DRY RUN)" if DRY_RUN else ""
-    print(f"\n**Total:** {len(workflow_runs)} | **Kept:** {len(kept_runs)} | **Discarded:** {len(discarded_runs)}{dry_run_notice_s}", file=out)
-
-    if out is not sys.stdout:
-        out.close()
+        print(f"\n**Total:** {len(workflow_runs)} | **Kept:** {len(kept_runs)} | **Discarded:** {len(discarded_runs)}{DRY_RUN_NOTICE_S}", file=out)
 
 
 # Main

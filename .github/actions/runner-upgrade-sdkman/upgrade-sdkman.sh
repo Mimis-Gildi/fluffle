@@ -2,13 +2,9 @@
 
 print '## SDKMan Upgrade' > $GITHUB_STEP_SUMMARY
 
-export RUST_BACKTRACE=1
-source $SDKMAN_INIT
+source ${0:A:h}/../runner_support.sh
 
-sdk current
-sdk version
-sdk update
-sdk flush --all
+sdk_refresh
 
 sdk selfupdate || {
   print 'upgraded=false' > $GITHUB_OUTPUT

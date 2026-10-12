@@ -3,6 +3,8 @@
 print 'completed=false' > $GITHUB_OUTPUT
 
 readonly action_home=${0:A:h}
+source $action_home/../runner_support.sh
+source $action_home/../conda-support.sh
 source $action_home/conda-remove.sh
 source $action_home/conda-install.sh
 source $action_home/conda-ml.sh
@@ -16,6 +18,11 @@ remaining=$(conda_remove_remaining)
 }
 
 conda_install
+
+readonly activation=$action_home/../conda-activate.sh
+[[ -s $activation ]] && source $activation
+(( $+functions[conda] )) || run_error "conda not activated" 111
+(( $+functions[mamba] )) || run_error "mamba not activated" 112
 
 conda_ml $1 $2
 

@@ -1,1 +1,0 @@
-../runner-detect-conda/conda-activate.sh

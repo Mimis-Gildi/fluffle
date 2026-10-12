@@ -35,4 +35,5 @@ runs:
         KEEP_LAST: ${{ inputs.keep-last }}
         STALE_MINUTES: ${{ inputs.stale-minutes }}
         DRY_RUN: ${{ inputs.dry-run }}
+        PYTHONPATH: ${{ github.action_path }}/..
       run: ${{ github.action_path }}/clean-workflow-runs.py

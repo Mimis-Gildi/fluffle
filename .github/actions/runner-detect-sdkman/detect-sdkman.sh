@@ -2,18 +2,12 @@
 
 print 'failed=true' > $GITHUB_OUTPUT
 
-behind() { [[ $(printf '%s\n%s' $1 $2 | sort -V | head -n1) != $1 ]] }
-
 readonly floor_sdkman=$1
 readonly floor_native=$2
 
-export RUST_BACKTRACE=1
-source $SDKMAN_INIT
+source ${0:A:h}/../runner_support.sh
 
-sdk current
-sdk version
-sdk update
-sdk flush --all
+sdk_refresh
 
 sdk_output=$(sdk version)
 

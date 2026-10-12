@@ -1,7 +1,5 @@
 #!/usr/bin/env zsh
 
-behind() { [[ $(printf '%s\n%s' $1 $2 | sort -V | head -n1) != $1 ]] }
-
 readonly expected_ruby=$1
 readonly floor_gems=$2
 readonly floor_bundler=$3
@@ -9,6 +7,8 @@ readonly floor_bundler=$3
 readonly actual_ruby=$(ruby --version | awk '{ print $2 }')
 readonly actual_gems=$(gem --version)
 readonly actual_bundler=$(bundle --version | awk '{ print $3 }')
+
+source ${0:A:h}/../runner_support.sh
 
 if [[ $actual_ruby != $expected_ruby ]] || behind $floor_gems $actual_gems || behind $floor_bundler $actual_bundler; then
   printf '::warning title=Ruby toolchain::ruby %s (exact %s), gems %s (floor %s), bundler %s (floor %s)\n' \

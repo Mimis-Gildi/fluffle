@@ -1,46 +1,39 @@
 #!/usr/bin/env zsh
 
+code=0
+
 readonly java_major=$1
 readonly java_vendor=$2
 
 print '## Upgrade Java' > $GITHUB_STEP_SUMMARY
 print 'upgraded=false' > $GITHUB_OUTPUT
 
-export RUST_BACKTRACE=1
-source $SDKMAN_INIT
+source ${0:A:h}/../runner_support.sh
 
-sdk current
-sdk version
-sdk update
+sdk_refresh
 
-readonly actual=$(sdk current java | awk '{ print $NF }')
-readonly latest=$(sdk list java | grep -oE "${java_major}\.[0-9.]+-${java_vendor}" | sort -V | tail -n1)
-
+readonly actual=$(sdk_current_version_of_candidate java)
+readonly latest=$(sdk_latest_java_of_major_and_vendor $java_major $java_vendor)
 
 if [[ $actual != $latest ]]; then
-  sdk install java $latest
-  sdk default java $latest
+  if sdk install java $latest; then
+    sdk default java $latest
+    sdk use java $latest
 
-  printf '### Set Java to %s\n\n' $latest >> $GITHUB_STEP_SUMMARY
-  printf '::notice title=Java upgraded::%s -> %s\n' $actual $latest
-  print 'upgraded=true' > $GITHUB_OUTPUT
+    printf '### Set Java to %s\n\n' $latest >> $GITHUB_STEP_SUMMARY
+    printf '::notice title=Java upgraded::%s -> %s\n' $actual $latest
+    print 'upgraded=true' > $GITHUB_OUTPUT
+  else
+    tag_error "sdk install java $latest failed (current $actual)"
+    code=37
+  fi
 fi
 
-readonly local_off=$(sdk list java | grep 'local only'  | awk '{ print $NF }' | sort -V)
-readonly installed=$(sdk list java | grep 'installed'   | awk '{ print $NF }' | sort -V)
+readonly idle=$(sdk_versions_of_candidate_marked java '^[^>]*[*+][^>]*$')
 
-for spare in ${(@f)local_off}; do
+for spare in ${(@f)idle}; do
   sdk uninstall java $spare
-  printf '- uninstalled spare Java %s\n' $spare >> $GITHUB_STEP_SUMMARY
-done
-
-for shim in ${(@f)installed}; do
-  if [[ $shim == $latest ]]; then
-    printf '- skipping ACTIVE Java %s\n' $shim >> $GITHUB_STEP_SUMMARY
-  else
-    sdk uninstall java $shim
-    printf '- uninstalled current Java %s\n' $shim >> $GITHUB_STEP_SUMMARY
-  fi
+  printf '- uninstalled idle Java %s\n' $spare >> $GITHUB_STEP_SUMMARY
 done
 
 {
@@ -49,3 +42,5 @@ done
   sdk current java
   sdk flush --all
 } >> $GITHUB_STEP_SUMMARY
+
+exit $code

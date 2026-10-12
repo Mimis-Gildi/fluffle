@@ -3,45 +3,29 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from enum import Enum
-from typing import Callable, Final
+from typing import Callable
 
-
-class Classification(Enum):
-    NONE = ""
-    KEEP = "Keep"
-    DISCARD = "Discard"
-
-
-class DeletionResult(Enum):
-    NONE = ""
-    MUTED = "Muted"
-    DELETED = "Deleted"
-    FAILED = "Failed"
-
-
-DEFAULT_STALE_MINUTES: Final[int] = int(os.environ.get("STALE_MINUTES", "11"))
-DEFAULT_KEEP_LAST_ON_MAIN: Final[int] = int(os.environ.get("KEEP_LAST", "2"))
-DRY_RUN: Final[bool] = os.environ.get("DRY_RUN", "true").lower() in ("true", "1", "yes")
+from prune_support import (
+    DEFAULT_KEEP_LAST_ON_MAIN, DEFAULT_STALE_MINUTES, DRY_RUN, DRY_RUN_NOTICE_S,
+    Classifiable, DeletionResult,
+    detect_branch, detect_repository, fail_fetch, parse_timestamp, summary_output,
+)
 
 
 # Compiled patterns
 
-NANOSECOND_TRUNCATION_PATTERN = re.compile(r'(\.\d{6})\d+')
 CACHE_KEY_PATTERN = re.compile(r'^(.+)-([0-9a-f]{40})$')
 
 
 # Data model
 
 @dataclass(slots=True)
-class WorkflowCache:
+class WorkflowCache(Classifiable):
     """A single workflow cache with classification metadata. All fields typed."""
     cache_id: int
     key: str
@@ -53,32 +37,16 @@ class WorkflowCache:
     size_in_bytes: int
     effective_timestamp: datetime
     repository: str
-    kept: Classification = Classification.NONE
-    reason: str = ""
     deleted: DeletionResult = DeletionResult.NONE
     delete_error: str = ""
 
     @property
-    def is_classified(self) -> bool:
-        return self.kept != Classification.NONE
-
-    @property
-    def is_kept(self) -> bool:
-        return self.kept == Classification.KEEP
-
-    @property
-    def is_discarded(self) -> bool:
-        return self.kept == Classification.DISCARD
+    def label(self) -> str:
+        return f"Cache {self.cache_id}"
 
     @property
     def size_mb(self) -> float:
         return self.size_in_bytes / (1024 * 1024)
-
-    @staticmethod
-    def _parse_timestamp(iso_timestamp_s: str) -> datetime:
-        """Parse GitHub's ISO 8601 timestamp. Truncates nanosecond precision to microseconds."""
-        truncated_timestamp_s = NANOSECOND_TRUNCATION_PATTERN.sub(r'\1', iso_timestamp_s)
-        return datetime.fromisoformat(truncated_timestamp_s.replace("Z", "+00:00"))
 
     @staticmethod
     def _parse_key_prefix(full_cache_key: str) -> str:
@@ -91,8 +59,8 @@ class WorkflowCache:
         """Construct from GitHub REST API JSON output."""
         created_at_s = raw_cache.get("created_at", "1970-01-01T00:00:00Z")
         last_accessed_at_s = raw_cache.get("last_accessed_at", "1970-01-01T00:00:00Z")
-        created = WorkflowCache._parse_timestamp(created_at_s)
-        accessed = WorkflowCache._parse_timestamp(last_accessed_at_s)
+        created = parse_timestamp(created_at_s)
+        accessed = parse_timestamp(last_accessed_at_s)
         full_key = raw_cache.get("key", "")
         return WorkflowCache(
             cache_id=raw_cache["id"],
@@ -106,31 +74,6 @@ class WorkflowCache:
             effective_timestamp=max(created, accessed),
             repository=repository,
         )
-
-    def classify(self, kept: Classification, reason: str) -> None:
-        """Set classification. Only allowed once -- raises if already classified or if NONE is passed."""
-        if kept == Classification.NONE:
-            raise ValueError(f"Cache {self.cache_id}: cannot classify as NONE")
-        if self.is_classified:
-            raise ValueError(f"Cache {self.cache_id} already classified as '{self.kept.value}' ({self.reason}), cannot reclassify as '{kept.value}' ({reason})")
-        self.kept = kept
-        self.reason = reason
-
-    def keep(self, reason: str) -> None:
-        self.classify(Classification.KEEP, reason)
-
-    def discard(self, reason: str) -> None:
-        self.classify(Classification.DISCARD, reason)
-
-
-# Supporting functions
-
-def detect_repository() -> str:
-    """Resolve the repository name from environment or gh CLI."""
-    return os.environ.get("GITHUB_REPOSITORY") or subprocess.run(
-        ["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
-        capture_output=True, text=True
-    ).stdout.strip()
 
 
 # Pipeline
@@ -146,10 +89,7 @@ class CachePipeline:
     @classmethod
     def on_current_branch(cls) -> CachePipeline:
         """Detect the current branch and repository."""
-        detected_branch = os.environ.get("BRANCH") or subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True
-        ).stdout.strip()
+        detected_branch = detect_branch()
         detected_repository = detect_repository()
         print(f"Branch: {detected_branch}")
         print(f"Repository: {detected_repository}")
@@ -167,8 +107,7 @@ class CachePipeline:
 
             gh_result = subprocess.run(gh_args, capture_output=True, text=True)
             if gh_result.returncode != 0:
-                print(f"::error title=Fetch Failed::{gh_result.stderr.strip()}", file=sys.stderr)
-                sys.exit(1)
+                fail_fetch(gh_result.stderr)
 
             response = json.loads(gh_result.stdout)
             page_caches = response.get("actions_caches", [])
@@ -265,31 +204,25 @@ class CachePipeline:
 
 def write_summary(caches: list[WorkflowCache]) -> None:
     """Write kept/discarded Markdown tables. Writes to GITHUB_STEP_SUMMARY or stdout."""
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    out = open(summary_path, "a") if summary_path else sys.stdout
+    with summary_output() as out:
+        kept_caches = [cache for cache in caches if cache.is_kept]
+        discarded_caches = [cache for cache in caches if cache.is_discarded]
 
-    kept_caches = [cache for cache in caches if cache.is_kept]
-    discarded_caches = [cache for cache in caches if cache.is_discarded]
+        print(f"\n### Kept ({len(kept_caches)})\n", file=out)
+        print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason |", file=out)
+        print("|----|------------|-----|------|---------------|--------|", file=out)
+        for cache in kept_caches:
+            print(f"| {cache.cache_id} | {cache.key_prefix} | {cache.ref} | {cache.size_mb:.1f}MB | {cache.last_accessed_at} | {cache.reason} |", file=out)
 
-    print(f"\n### Kept ({len(kept_caches)})\n", file=out)
-    print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason |", file=out)
-    print("|----|------------|-----|------|---------------|--------|", file=out)
-    for cache in kept_caches:
-        print(f"| {cache.cache_id} | {cache.key_prefix} | {cache.ref} | {cache.size_mb:.1f}MB | {cache.last_accessed_at} | {cache.reason} |", file=out)
+        print(f"\n### Discarded ({len(discarded_caches)})\n", file=out)
+        print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason | Result |", file=out)
+        print("|----|------------|-----|------|---------------|--------|--------|", file=out)
+        for cache in discarded_caches:
+            deleted_display = cache.deleted.value if cache.deleted != DeletionResult.NONE else "Pending"
+            print(f"| {cache.cache_id} | {cache.key_prefix} | {cache.ref} | {cache.size_mb:.1f}MB | {cache.last_accessed_at} | {cache.reason} | {deleted_display} |", file=out)
 
-    print(f"\n### Discarded ({len(discarded_caches)})\n", file=out)
-    print("| ID | Key Prefix | Ref | Size | Last Accessed | Reason | Result |", file=out)
-    print("|----|------------|-----|------|---------------|--------|--------|", file=out)
-    for cache in discarded_caches:
-        deleted_display = cache.deleted.value if cache.deleted != DeletionResult.NONE else "Pending"
-        print(f"| {cache.cache_id} | {cache.key_prefix} | {cache.ref} | {cache.size_mb:.1f}MB | {cache.last_accessed_at} | {cache.reason} | {deleted_display} |", file=out)
-
-    total_discarded_size_mb = sum(cache.size_mb for cache in discarded_caches)
-    dry_run_notice_s = " (DRY RUN)" if DRY_RUN else ""
-    print(f"\n**Total:** {len(caches)} | **Kept:** {len(kept_caches)} | **Discarded:** {len(discarded_caches)} ({total_discarded_size_mb:.1f}MB){dry_run_notice_s}", file=out)
-
-    if out is not sys.stdout:
-        out.close()
+        total_discarded_size_mb = sum(cache.size_mb for cache in discarded_caches)
+        print(f"\n**Total:** {len(caches)} | **Kept:** {len(kept_caches)} | **Discarded:** {len(discarded_caches)} ({total_discarded_size_mb:.1f}MB){DRY_RUN_NOTICE_S}", file=out)
 
 
 # Main
