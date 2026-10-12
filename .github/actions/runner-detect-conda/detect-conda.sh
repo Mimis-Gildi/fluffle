@@ -71,6 +71,8 @@ behind $mamba_required $mamba_version && {
 }
 
 envs=$(conda env list) || run_error "conda env list failed" 0
+printf '### Conda envs\n\n```\n%s\n```\n\n' $envs >> $GITHUB_STEP_SUMMARY
+
 if [[ -n $(print -r -- $envs | awk -v env=$py_env '$1 == env') ]]; then
   ml_packages=$(conda list -n $py_env) || run_error "conda list -n $py_env failed" 0
   [[ -n $(print -r -- $ml_packages | awk '$1 == "conda"') ]] && run_error "conda core installed in $py_env, base must be recreated" 0
