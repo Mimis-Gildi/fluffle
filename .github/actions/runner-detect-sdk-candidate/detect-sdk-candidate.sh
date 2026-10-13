@@ -18,5 +18,5 @@ readonly latest=$(sdk_latest_release_version_of_candidate $candidate)
   exit 0
 }
 
-printf '::notice title=%1$s Okay::%2$s\n' $candidate $actual
+printf '::notice title=%1$s OK::%2$s\n' $candidate $actual
 print 'failed=false' > $GITHUB_OUTPUT
