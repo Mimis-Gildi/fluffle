@@ -21,15 +21,15 @@ done
 
 conda_info 'Conda base'
 base_info=$(conda info) || run_error "conda info failed in base" 61
-readonly base_location=$(print -r -- $base_info | awk -F' : ' '/active env location/ { print $2 }')
+readonly base_location=$(print $base_info | awk -F' : ' '/active env location/ { print $2 }')
 [[ $base_location == $conda_home ]] || run_error "conda deactivate lands in ${base_location:-none}, expected $conda_home" 62
 
 channels=$(conda config --show channels) || run_error "conda config --show channels failed" 51
 priority=$(conda config --show channel_priority) || run_error "conda config --show channel_priority failed" 52
-readonly user_channels=($(print -r -- $channels | awk '/^ *- / && $2 !~ /^(conda-forge|defaults|conda-pypi)$/ { print $2 }'))
-readonly priority_mode=$(print -r -- $priority | awk '{ print $2 }')
+readonly user_channels=($(print $channels | awk '/^ *- / && $2 !~ /^(conda-forge|defaults|conda-pypi)$/ { print $2 }'))
+readonly priority_mode=$(print $priority | awk '{ print $2 }')
 
-[[ -n $(print -r -- $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
+[[ -n $(print $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
   conda config --remove channels conda-pypi || run_error "conda config --remove channels conda-pypi failed" 53
   printf '::warning title=Conda channels drift::conda-pypi channel ripped out with vengeance!\n'
   printf '### Conda channels: conda-pypi ripped out with vengeance!\n\n' >> $GITHUB_STEP_SUMMARY
@@ -56,7 +56,7 @@ conda clean -y -a || run_error "conda base final clean failed" 0
 
 if conda activate $environment_name; then
   ml_info=$(conda info) || run_error "conda info failed in $environment_name" 32
-  ml_location=$(print -r -- $ml_info | awk -F' : ' '/active env location/ { print $2 }')
+  ml_location=$(print $ml_info | awk -F' : ' '/active env location/ { print $2 }')
   [[ $ml_location == $conda_home/envs/$environment_name ]] || run_error "conda activate $environment_name lands in ${ml_location:-none}, expected $conda_home/envs/$environment_name" 33
 
   conda install -y python=$python_pinned_version  || run_error "conda $environment_name python pin to $python_pinned_version failed" 41

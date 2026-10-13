@@ -31,13 +31,13 @@ readonly mamba_version=$(mamba --version)
 [[ -n $mamba_version ]] || run_error "mamba --version gives no version" 0
 
 channels=$(conda config --show channels) || run_error "conda config --show channels failed" 0
-[[ -n $(print -r -- $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
+[[ -n $(print $channels | awk '/^ *- / && $2 == "conda-pypi"') ]] && {
   printf '::warning title=Conda channels drift::conda-pypi channel present\n'
   print 'failed=true' > $GITHUB_OUTPUT
 }
 
 priority=$(conda config --show channel_priority) || run_error "conda config --show channel_priority failed" 0
-[[ $(print -r -- $priority | awk '{ print $2 }') == strict ]] || {
+[[ $(print $priority | awk '{ print $2 }') == strict ]] || {
     printf '::warning title=Conda priority drift::channel_priority is not strict\n'
     print 'failed=true' > $GITHUB_OUTPUT
 }
@@ -48,7 +48,7 @@ while (( CONDA_SHLVL > 1 )); do
   conda_info 'Conda deactivate' > /dev/null
 done
 readonly base_info=$(conda_info 'Conda base')
-readonly base_location=$(print -r -- $base_info | awk -F' : ' '/active env location/ { print $2 }')
+readonly base_location=$(print $base_info | awk -F' : ' '/active env location/ { print $2 }')
 [[ $base_location == $conda_home ]] || run_error "conda deactivate lands in ${base_location:-none}, expected $conda_home" 0
 
 readonly py_base_version=$(python --version | awk '/^Python/ { print $2 }')
@@ -73,9 +73,9 @@ behind $mamba_required $mamba_version && {
 envs=$(conda env list) || run_error "conda env list failed" 0
 printf '### Conda envs\n\n```\n%s\n```\n\n' $envs >> $GITHUB_STEP_SUMMARY
 
-if [[ -n $(print -r -- $envs | awk -v env=$py_env '$1 == env') ]]; then
+if [[ -n $(print $envs | awk -v env=$py_env '$1 == env') ]]; then
   ml_packages=$(conda list -n $py_env) || run_error "conda list -n $py_env failed" 0
-  [[ -n $(print -r -- $ml_packages | awk '$1 == "conda"') ]] && run_error "conda core installed in $py_env, base must be recreated" 0
+  [[ -n $(print $ml_packages | awk '$1 == "conda"') ]] && run_error "conda core installed in $py_env, base must be recreated" 0
   conda activate $py_env
   if [[ $(conda_info "Conda $py_env" | awk -F' : ' '/active environment/ { print $2 }') == $py_env ]]; then
     readonly py_ml_version=$(python --version | awk '/^Python/ { print $2 }')

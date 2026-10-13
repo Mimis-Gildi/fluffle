@@ -59,8 +59,8 @@ jobs:
       - name: Toolchain Snapshot
         continue-on-error: true
         run: |
-          print -r -- "PATH=$PATH"
-          print -r -- "CONDA_SHLVL=${CONDA_SHLVL:-none} CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-none}"
+          print "PATH=$PATH"
+          print "CONDA_SHLVL=${CONDA_SHLVL:-none} CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-none}"
           whence -va sdk conda mamba python java ruby gem bundle
           sdk version
           sdk current
