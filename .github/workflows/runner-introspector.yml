@@ -78,12 +78,8 @@ jobs:
           echo "::group:: Hosted Infra Fingerprint"
           echo "::notice title=Event::$GITHUB_EVENT_NAME"
           echo "::notice title=Branch::$GITHUB_REF_NAME"
-          echo "::notice title=OS:: $(cat /etc/issue || true)"
-          echo "::notice title=Kernel::$(uname -v || true)"
-          echo "::notice title=Memory::$(free -hg || true)"
-          echo "::notice title=CPU::$(nproc) cores, $(lscpu | grep 'Model name' | uniq || true)"
-          echo "::notice title=Git::$(git --version || true)"
-          echo "::notice title=GitHub CLI::$(gh version || true)"
+          echo "::notice title=Git::$(git --version)"
+          echo "::notice title=GitHub CLI::$(gh version)"
           echo "::notice title=Runner::${{ runner.name }} ($( hostname -s ))"
           echo "::endgroup::"
 
@@ -118,6 +114,7 @@ jobs:
       failed: ${{ steps.conda-probe.outputs.failed }}
       inoperable: ${{ steps.conda-probe.outputs.inoperable }}
       upgraded: ${{ steps.conda-upgrade.outputs.upgraded }}
+      created: ${{ steps.conda-upgrade.outputs.created }}
       installed: ${{ steps.conda-install.outputs.installed }}
 
     steps:
@@ -140,6 +137,7 @@ jobs:
         uses: Mimis-Gildi/fluffle/.github/actions/runner-upgrade-conda@main
         with:
           python-env: ${{ env.PYTHON_ENV }}
+          python-pin: ${{ env.PYTHON_PIN }}
 
       - name: Re-Install Conda
         id: conda-install
@@ -153,7 +151,7 @@ jobs:
       - name: Verify Conda
         id: conda-verify
         timeout-minutes: 7
-        if: steps.conda-upgrade.outputs.upgraded == 'true' || steps.conda-install.outputs.installed == 'true'
+        if: steps.conda-probe.outputs.inoperable == 'true' || steps.conda-probe.outputs.failed == 'true'
         uses: Mimis-Gildi/fluffle/.github/actions/runner-detect-conda@main
         with:
           python-base-version: ${{ env.PYTHON_BASE_VERSION }}

@@ -9,11 +9,17 @@ inputs:
   python-env:
     description: "Name of the Python working environment"
     required: true
+  python-pin:
+    description: "Python version to pin to ml working environment"
+    required: true
 
 outputs:
   upgraded:
     description: "true if selfupdate was executed"
     value: ${{ steps.upgrade.outputs.upgraded }}
+  created:
+    description: "Any environments that were created"
+    value: ${{ steps.upgrade.outputs.created }}
 
 runs:
   using: "composite"
@@ -22,4 +28,4 @@ runs:
 
     - id: upgrade
       shell: zsh -l {0}
-      run: ${{ github.action_path }}/upgrade-conda.sh ${{ inputs.python-env }}
+      run: ${{ github.action_path }}/upgrade-conda.sh ${{ inputs.python-env }} ${{ inputs.python-pin }}

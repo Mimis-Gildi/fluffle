@@ -3,7 +3,8 @@
 source ${0:A:h}/../runner_support.sh
 source ${0:A:h}/../conda-support.sh
 
-readonly py_env=$1
+readonly environment_name=$1
+readonly python_pinned_version=$2
 
 print 'upgraded=false' > $GITHUB_OUTPUT
 
@@ -53,16 +54,22 @@ conda upgrade -y conda || run_error "conda conda upgrade failed" 23
 conda upgrade -y --all || run_error "conda upgrade ALL failed" 24
 conda clean -y -a || run_error "conda base final clean failed" 0
 
-conda activate $py_env || run_error "conda activate $py_env failed" 31
-conda_info "Conda $py_env"
-ml_info=$(conda info) || run_error "conda info failed in $py_env" 32
-readonly ml_location=$(print -r -- $ml_info | awk -F' : ' '/active env location/ { print $2 }')
-[[ $ml_location == $conda_home/envs/$py_env ]] || run_error "conda activate $py_env lands in ${ml_location:-none}, expected $conda_home/envs/$py_env" 33
+if conda activate $environment_name; then
+  ml_info=$(conda info) || run_error "conda info failed in $environment_name" 32
+  ml_location=$(print -r -- $ml_info | awk -F' : ' '/active env location/ { print $2 }')
+  [[ $ml_location == $conda_home/envs/$environment_name ]] || run_error "conda activate $environment_name lands in ${ml_location:-none}, expected $conda_home/envs/$environment_name" 33
 
-conda upgrade -y python || run_error "conda $py_env python upgrade failed" 41
-conda upgrade -y --all || run_error "conda $py_env upgrade ALL failed" 42
-conda clean -y -a || run_error "conda $py_env final clean failed" 0
+  conda install -y python=$python_pinned_version  || run_error "conda $environment_name python pin to $python_pinned_version failed" 41
+  conda upgrade -y python || run_error "conda $environment_name python upgrade failed" 42
+  conda upgrade -y --all || run_error "conda $environment_name upgrade ALL failed" 43
+  conda clean -y -a || run_error "conda $environment_name final clean failed" 0
 
-print 'upgraded=true' > $GITHUB_OUTPUT
+  print 'upgraded=true' > $GITHUB_OUTPUT
+else
+  printf '::warning title=Environment %1$s missing::Will recreate %1$s and move on.\n' $environment_name
+  conda_create_ml $environment_name $python_pinned_version || run_error "conda environment create failed in $environment_name" 0
+
+  printf 'upgraded=true\ncreated=%s\n' $environment_name > $GITHUB_OUTPUT
+fi
 
 conda_info 'Conda end state'

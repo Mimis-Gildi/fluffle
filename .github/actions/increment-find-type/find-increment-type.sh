@@ -40,38 +40,37 @@ printf '## Increment Action — Invocation State
   case $FORCE_ACTION in
     major)
       printf '::notice title=Major-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
       exit 0
       ;;
     minor)
       printf '::notice title=Minor-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
       exit 0
       ;;
     patch)
       printf '::notice title=Patch-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$DEFAULT_INC" > $GITHUB_OUTPUT
       exit 0
       ;;
     skip)
       printf '::notice title=SKIP-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$DEFAULT_ACTION" > $GITHUB_OUTPUT
       exit 0
       ;;
     fail)
       printf '::notice title=FAIL-Selected::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[1]" > $GITHUB_OUTPUT
       exit 1
       ;;
     *)
-      printf '::error title=Impossible FAIL::Invalid action selection!
-      event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME $FORCE_ACTION $LAST_MSG $LAST_AUTHOR $ACTOR
+      printf '::error title=Impossible FAIL::Invalid action selection! event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
+        $EVENT_NAME $FORCE_ACTION "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[1]" > $GITHUB_OUTPUT
       exit 1
       ;;
@@ -90,14 +89,13 @@ printf '## Increment Action — Invocation State
     }
     print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
     printf '::notice title=Major-Create::event=%s, branch=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
-    $EVENT_NAME $BRANCH_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+    $EVENT_NAME $BRANCH_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
     exit 0
 }
 
 [[ ${LAST_AUTHOR:l} == *'[bot]'* ]] && {
-  printf '::error title=Bot-Ignored::Ignoring all bot operations.
-  With event=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
-  $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+  printf '::error title=Bot-Ignored::Ignoring all bot operations. With event=%s, force_major=%s, last_message=%s, last_author=%s (actor=%s).\n' \
+  $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
   exit 0
 }
 
@@ -120,19 +118,19 @@ printf '## Increment Action — Invocation State
   case ${LAST_MSG:l} in
     *'[force up]'*)
       printf '::notice title=Minor-Forced-Push::Major increment on push is forbidden: event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
       exit 0
       ;;
     *'[push up]'*)
       printf '::notice title=Minor-Push::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
       exit 0
       ;;
     *)
       printf '::notice title=Patch-Default::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-        $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+        $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
       print "type=$DEFAULT_INC" > $GITHUB_OUTPUT
       exit 0
       ;;
@@ -142,13 +140,13 @@ printf '## Increment Action — Invocation State
 case ${LAST_MSG:l} in
   *'[force up]'*)
     printf '::notice title=Forced-Major::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-      $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+      $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
     print "type=$ACTIONS[5]" > $GITHUB_OUTPUT
     exit 0
     ;;
   *)
     printf '::notice title=Minor-Default::event=%s, action=%s, message=%s, author=%s (actor=%s).\n' \
-      $EVENT_NAME ${FORCE_ACTION:-none} $LAST_MSG $LAST_AUTHOR $ACTOR
+      $EVENT_NAME ${FORCE_ACTION:-none} "$LAST_MSG" $LAST_AUTHOR $ACTOR
     print "type=$ACTIONS[4]" > $GITHUB_OUTPUT
     exit 0
     ;;
