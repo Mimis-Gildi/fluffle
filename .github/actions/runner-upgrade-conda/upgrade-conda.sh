@@ -59,7 +59,7 @@ if conda activate $environment_name; then
   ml_location=$(print $ml_info | awk -F' : ' '/active env location/ { print $2 }')
   [[ $ml_location == $conda_home/envs/$environment_name ]] || run_error "conda activate $environment_name lands in ${ml_location:-none}, expected $conda_home/envs/$environment_name" 33
 
-  conda install -y python=$python_pinned_version  || run_error "conda $environment_name python pin to $python_pinned_version failed" 41
+  conda install -y python=$python_pinned_version || run_error "conda $environment_name python pin to $python_pinned_version failed" 41
   conda upgrade -y python || run_error "conda $environment_name python upgrade failed" 42
   conda upgrade -y --all || run_error "conda $environment_name upgrade ALL failed" 43
   conda clean -y -a || run_error "conda $environment_name final clean failed" 0

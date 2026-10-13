@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-print '## SDKMan Upgrade' > $GITHUB_STEP_SUMMARY
+print '## SDKMAN Upgrade' > $GITHUB_STEP_SUMMARY
 
 source ${0:A:h}/../runner_support.sh
 
@@ -8,7 +8,7 @@ sdk_refresh
 
 sdk selfupdate || {
   print 'upgraded=false' > $GITHUB_OUTPUT
-  print '### ERROR: SDKMan did NOT self-update.' >> $GITHUB_STEP_SUMMARY
+  print '### ERROR: SDKMAN did NOT self-update.' >> $GITHUB_STEP_SUMMARY
   exit 0
 }
 

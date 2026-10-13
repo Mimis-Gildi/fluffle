@@ -38,8 +38,8 @@ channels=$(conda config --show channels) || run_error "conda config --show chann
 
 priority=$(conda config --show channel_priority) || run_error "conda config --show channel_priority failed" 0
 [[ $(print $priority | awk '{ print $2 }') == strict ]] || {
-    printf '::warning title=Conda priority drift::channel_priority is not strict\n'
-    print 'failed=true' > $GITHUB_OUTPUT
+  printf '::warning title=Conda priority drift::channel_priority is not strict\n'
+  print 'failed=true' > $GITHUB_OUTPUT
 }
 
 while (( CONDA_SHLVL > 1 )); do
@@ -71,7 +71,7 @@ behind $mamba_required $mamba_version && {
 }
 
 envs=$(conda env list) || run_error "conda env list failed" 0
-printf '### Conda envs\n\n```\n%s\n```\n\n' $envs >> $GITHUB_STEP_SUMMARY
+printf '### Conda envs\n\n```text\n%s\n```\n\n' $envs >> $GITHUB_STEP_SUMMARY
 
 if [[ -n $(print $envs | awk -v env=$py_env '$1 == env') ]]; then
   ml_packages=$(conda list -n $py_env) || run_error "conda list -n $py_env failed" 0

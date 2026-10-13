@@ -8,7 +8,7 @@ source ${0:A:h}/../runner_support.sh
 
 readonly actual=$(sdk_current_version_of_candidate $candidate)
 [[ ! $actual ]] && {
-  printf '::warning title=%1$s not installed:: %1$s\n' $candidate
+  printf '::warning title=%1$s not installed::%1$s\n' $candidate
   exit 0
 }
 

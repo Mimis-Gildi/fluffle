@@ -24,7 +24,7 @@ readonly activation=${0:A:h}/../conda-activate.sh
 (( $+functions[mamba] )) || run_error "mamba not activated" 112
 
 conda config --set channel_priority strict || run_error "conda strict channel priority setting sneezed" 0
-conda_create_ml $environment_name $python_pin  || run_error "conda environment create failed for $environment_name" 0
+conda_create_ml $environment_name $python_pin || run_error "conda environment create failed for $environment_name" 0
 
 printf '### Conda installed\n\n```text\n%s\n```\n\n' "$(conda info)" >> $GITHUB_STEP_SUMMARY
 
