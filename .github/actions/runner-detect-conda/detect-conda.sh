@@ -23,7 +23,7 @@ printf '::notice title=Conda after activation hook::shell level %s, env %s\n' ${
 conda_info 'Conda after activation hook' > /dev/null
 
 readonly conda_base=$(conda info --base)
-[[ $conda_base == $conda_home ]] || run_error "conda base is ${conda_base:-none}, expected $conda_home" 0
+[[ ${conda_base:A} == ${conda_home:A} ]] || run_error "conda base is ${conda_base:-none}, expected ${conda_home:A}" 0
 
 readonly conda_version=$(conda --version | awk '/^conda/ { print $2 }')
 readonly mamba_version=$(mamba --version)
@@ -49,7 +49,7 @@ while (( CONDA_SHLVL > 1 )); do
 done
 readonly base_info=$(conda_info 'Conda base')
 readonly base_location=$(print $base_info | awk -F' : ' '/active env location/ { print $2 }')
-[[ $base_location == $conda_home ]] || run_error "conda deactivate lands in ${base_location:-none}, expected $conda_home" 0
+[[ ${base_location:A} == ${conda_home:A} ]] || run_error "conda deactivate lands in ${base_location:-none}, expected ${conda_home:A}" 0
 
 readonly py_base_version=$(python --version | awk '/^Python/ { print $2 }')
 [[ -n $py_base_version ]] || run_error "python --version in base gives no version" 0
