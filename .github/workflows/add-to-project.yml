@@ -1,0 +1,103 @@
+name: Add to Project
+run-name: "Add Item to Project, run on ${{ github.repository }} by ${{ github.actor }} with ${{ github.event_name }} (Attempt ${{ github.run_attempt }})"
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: "Project key: see the key table at the bottom of Mimis-Gildi/fluffle/.github/workflows/add-to-project.yml"
+        type: string
+        default: warpath
+    secrets:
+      ADD_TO_PROJECT:
+        required: true
+
+jobs:
+  add-to-project:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/add-to-project@v2.0.0
+        with:
+          project-url: >-
+            ${{ fromJSON('{
+              "valorem":    "https://github.com/orgs/Gotham-Village/projects/1",
+              "trails":     "https://github.com/orgs/Gotham-Village/projects/2",
+              "publishing": "https://github.com/orgs/Mimis-Gildi/projects/1",
+              "warpath":    "https://github.com/orgs/Mimis-Gildi/projects/2",
+              "voyage":     "https://github.com/orgs/Mimis-Gildi/projects/3",
+              "marketing":  "https://github.com/orgs/Mimis-Gildi/projects/4",
+              "experiment": "https://github.com/orgs/Mimis-Gildi/projects/5",
+              "yggdrasil":  "https://github.com/orgs/Mimis-Gildi/projects/6",
+              "frumgerdir": "https://github.com/orgs/Mimis-Latlaeg-Hattalag/projects/1",
+              "viskr":      "https://github.com/orgs/Gervi-Hera-Vitr/projects/1",
+              "mosaify":    "https://github.com/orgs/mosaify/projects/1",
+              "takeone":    "https://github.com/orgs/mosaify/projects/2",
+              "family":     "https://github.com/users/rdd13r/projects/4"
+            }')[inputs.project] }}
+          github-token: ${{ secrets.ADD_TO_PROJECT }}
+
+#  orgs/Gotham-Village/projects/1           # valorem                              CLOSED
+#  orgs/Gotham-Village/projects/2           # Learning Trails
+#  orgs/Mimis-Gildi/projects/1              # Mimis Publishing
+#  orgs/Mimis-Gildi/projects/2              # @rdd13r's Warpath
+#  orgs/Mimis-Gildi/projects/3              # @CaptainLugaru's Voyage              CLOSED
+#  orgs/Mimis-Gildi/projects/4              # @CaptainLugaru's Marketing Plan      CLOSED
+#  orgs/Mimis-Gildi/projects/5              # @CaptainLugaru's Experiment          CLOSED
+#  orgs/Mimis-Gildi/projects/6              # Yggdrasil
+#  orgs/Mimis-Scala                         # (no projects)
+#  orgs/Mimis-Latlaeg-Hattalag/projects/1   # Látlæg Frumgerðir
+#  orgs/Gervi-Hera-Vitr/projects/1          # Gervi Héra Viskr Learning Trails
+#  orgs/mosaify/projects/1                  # Take Over the World!
+#  orgs/mosaify/projects/2                  # Mosaify Project                      CLOSED
+#  users/rdd13r/projects/4                  # Mímis Gildi Family
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Usage
+#
+# Adds the triggering issue or pull request to a Projects v2 board selected by key.
+# The caller owns the trigger; this workflow only resolves the key and adds the item.
+#
+#   on:
+#     issues:
+#       types: [opened, reopened]
+#
+#   jobs:
+#     add-to-project:
+#       uses: Mimis-Gildi/fluffle/.github/workflows/add-to-project.yml@main
+#       with:
+#         project: yggdrasil                                  # omit for default: warpath
+#       secrets:
+#         ADD_TO_PROJECT: ${{ secrets.ADD_TO_PROJECT }}       # or: secrets: inherit
+#
+# Keys
+#
+#   key          project                                  title
+#   valorem      orgs/Gotham-Village/projects/1           valorem                              CLOSED
+#   trails       orgs/Gotham-Village/projects/2           Learning Trails
+#   publishing   orgs/Mimis-Gildi/projects/1              Mimis Publishing
+#   warpath      orgs/Mimis-Gildi/projects/2              @rdd13r's Warpath                    default
+#   voyage       orgs/Mimis-Gildi/projects/3              @CaptainLugaru's Voyage              CLOSED
+#   marketing    orgs/Mimis-Gildi/projects/4              @CaptainLugaru's Marketing Plan      CLOSED
+#   experiment   orgs/Mimis-Gildi/projects/5              @CaptainLugaru's Experiment          CLOSED
+#   yggdrasil    orgs/Mimis-Gildi/projects/6              Yggdrasil
+#   frumgerdir   orgs/Mimis-Latlaeg-Hattalag/projects/1   Látlæg Frumgerðir
+#   viskr        orgs/Gervi-Hera-Vitr/projects/1          Gervi Héra Viskr Learning Trails
+#   mosaify      orgs/mosaify/projects/1                  Take Over the World!
+#   takeone      orgs/mosaify/projects/2                  Mosaify Project                      CLOSED
+#   family       users/rdd13r/projects/4                  Mímis Gildi Family
+#
+#   Mimis-Scala has no projects.
+#   An unknown key resolves to an empty project-url and the action fails.
+#
+# Token
+#
+#   ADD_TO_PROJECT is a PAT or App token with `project` scope on the target owner and read access to the caller's issues
+#   and pull requests. GITHUB_TOKEN cannot write to Projects v2.
+#
+# Adding a project
+#
+#   Add the key to the fromJSON map in the step and a row to the table above.
+#   `gh project list --owner <owner> --closed` lists numbers and titles.
+# ----------------------------------------------------------------------------------------------------------------------
