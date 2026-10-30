@@ -38,20 +38,6 @@ jobs:
             }')[inputs.project] }}
           github-token: ${{ secrets.ADD_TO_PROJECT }}
 
-#  orgs/Gotham-Village/projects/1           # valorem                              CLOSED
-#  orgs/Gotham-Village/projects/2           # Learning Trails
-#  orgs/Mimis-Gildi/projects/1              # Mimis Publishing
-#  orgs/Mimis-Gildi/projects/2              # @rdd13r's Warpath
-#  orgs/Mimis-Gildi/projects/3              # @CaptainLugaru's Voyage              CLOSED
-#  orgs/Mimis-Gildi/projects/4              # @CaptainLugaru's Marketing Plan      CLOSED
-#  orgs/Mimis-Gildi/projects/5              # @CaptainLugaru's Experiment          CLOSED
-#  orgs/Mimis-Gildi/projects/6              # Yggdrasil
-#  orgs/Mimis-Scala                         # (no projects)
-#  orgs/Mimis-Latlaeg-Hattalag/projects/1   # Látlæg Frumgerðir
-#  orgs/Gervi-Hera-Vitr/projects/1          # Gervi Héra Viskr Learning Trails
-#  orgs/mosaify/projects/1                  # Take Over the World!
-#  orgs/mosaify/projects/2                  # Mosaify Project                      CLOSED
-#  users/rdd13r/projects/4                  # Mímis Gildi Family
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Usage
@@ -73,17 +59,17 @@ jobs:
 #
 # Keys
 #
-#   key          project                                  title
+#   | Key        | Project Slug                           | Title Key                         | Status
 #   valorem      orgs/Gotham-Village/projects/1           valorem                              CLOSED
-#   trails       orgs/Gotham-Village/projects/2           Learning Trails
-#   publishing   orgs/Mimis-Gildi/projects/1              Mimis Publishing
+#   trails       orgs/Gotham-Village/projects/2           Learning Trails                      (old school)
+#   publishing   orgs/Mimis-Gildi/projects/1              Mimis Publishing                     most used
 #   warpath      orgs/Mimis-Gildi/projects/2              @rdd13r's Warpath                    default
 #   voyage       orgs/Mimis-Gildi/projects/3              @CaptainLugaru's Voyage              CLOSED
 #   marketing    orgs/Mimis-Gildi/projects/4              @CaptainLugaru's Marketing Plan      CLOSED
 #   experiment   orgs/Mimis-Gildi/projects/5              @CaptainLugaru's Experiment          CLOSED
-#   yggdrasil    orgs/Mimis-Gildi/projects/6              Yggdrasil
+#   yggdrasil    orgs/Mimis-Gildi/projects/6              Yggdrasil                            School Program
 #   frumgerdir   orgs/Mimis-Latlaeg-Hattalag/projects/1   Látlæg Frumgerðir
-#   viskr        orgs/Gervi-Hera-Vitr/projects/1          Gervi Héra Viskr Learning Trails
+#   viskr        orgs/Gervi-Hera-Vitr/projects/1          Gervi Héra Viskr Learning Trails     School
 #   mosaify      orgs/mosaify/projects/1                  Take Over the World!
 #   takeone      orgs/mosaify/projects/2                  Mosaify Project                      CLOSED
 #   family       users/rdd13r/projects/4                  Mímis Gildi Family
